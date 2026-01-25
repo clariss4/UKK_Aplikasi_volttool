@@ -6,7 +6,7 @@ import '../data_dummy.dart';
 import '../models/user.dart';
 import '../widgets/user_card.dart';
 import '../screens/user_form_page.dart';
-import '../Widgets/user_edit_bottom.dart';
+import '../Widgets/user_edit_bottom.dart' hide UserEditBottomSheet;
 
 /// Halaman utama Manajemen Pengguna
 class ManajemenPenggunaPage extends StatefulWidget {
