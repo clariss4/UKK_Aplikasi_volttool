@@ -1,3 +1,5 @@
+// ==================== FILE: lib/screens/manajemen_alat_page.dart ====================
+
 import 'package:apk_peminjaman/Widgets/main_drawer.dart';
 import 'package:flutter/material.dart';
 import '../../controllers/auth_controller.dart';
@@ -20,6 +22,7 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
   final searchController = TextEditingController();
   final auth = AuthController();
   final db = DatabaseService();
+  
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +71,6 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
     );
   }
 
-  // ================= AppBar =================
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: const Color(0xFFFF8C42),
@@ -97,7 +99,6 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
     );
   }
 
-  // ================= Search Bar =================
   Widget _buildSearchBar(List<Kategori> kategoriList) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -129,7 +130,6 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
     );
   }
 
-  // ================= Filter Chips =================
   Widget _buildFilterChips(List<Kategori> kategoriList) {
     return Container(
       height: 60,
@@ -179,7 +179,6 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
     );
   }
 
-  // ================= Section Header =================
   Widget _buildSectionHeader(List<Kategori> kategoriList) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -192,7 +191,6 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
     );
   }
 
-  // ================= List Alat =================
   Widget _buildAlatList(
       List<Alat> alatList, List<Kategori> kategoriList) {
     return Expanded(

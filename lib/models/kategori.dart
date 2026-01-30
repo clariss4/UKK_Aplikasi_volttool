@@ -1,31 +1,36 @@
 // ==================== FILE: lib/models/kategori.dart ====================
 
 class Kategori {
-  final String? id; // ⬅️ nullable (aman untuk insert)
+  final String id;
   final String nama;
   final bool isActive;
+  final DateTime? createdAt;
 
   Kategori({
-    this.id,
+    required this.id,
     required this.nama,
-    required this.isActive,
+    this.isActive = true,
+    this.createdAt,
   });
 
-  /* ================= MAP → DB ================= */
+  /* ================= JSON → MODEL ================= */
+  factory Kategori.fromJson(Map<String, dynamic> json) {
+    return Kategori(
+      id: json['id'] as String,
+      nama: json['nama_kategori'] as String,
+      isActive: json['is_active'] ?? true,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : null,
+    );
+  }
+
+  /* ================= MODEL → MAP (untuk dialog) ================= */
   Map<String, dynamic> toMap() {
     return {
-      if (id != null) 'id': id, // ⬅️ hanya untuk update
+      'id': id,
       'nama_kategori': nama,
       'is_active': isActive,
     };
-  }
-
-  /* ================= DB → MODEL ================= */
-  factory Kategori.fromMap(Map<String, dynamic> map) {
-    return Kategori(
-      id: map['id'],
-      nama: map['nama_kategori'],
-      isActive: map['is_active'] ?? true,
-    );
   }
 }
