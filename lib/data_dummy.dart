@@ -47,6 +47,7 @@ class DummyData {
     Kategori(id: '1', nama: 'Alat Ukur', isActive: true),
     Kategori(id: '2', nama: 'Alat Solder', isActive: true),
     Kategori(id: '3', nama: 'Alat Potong', isActive: false),
+    Kategori(id: '4', nama: 'Alat Kerja Listrik', isActive: false),
   ];
 
   // ==================== ALAT ====================
@@ -69,7 +70,7 @@ class DummyData {
       stokTersedia: 15,
       kondisi: 'baik',
       isActive: false,
-      fotoUrl: 'assets/images/meteran.png',
+      fotoUrl: 'Assets/images/tang tangan.jpg',
     ),
   ];
 

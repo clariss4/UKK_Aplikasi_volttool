@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-
 // ==================== FILE: lib/models/alat.dart ====================
+
 class Alat {
-  final String id;
+  final String? id; // ⬅️ nullable (INSERT aman)
   final String kategoriId;
   final String nama;
   final int stokTotal;
@@ -12,7 +11,7 @@ class Alat {
   final String? fotoUrl;
 
   Alat({
-    required this.id,
+    this.id,
     required this.kategoriId,
     required this.nama,
     required this.stokTotal,
@@ -22,9 +21,10 @@ class Alat {
     this.fotoUrl,
   });
 
-  Map<String, dynamic> toJson() {
+  /* ================= MAP → DB ================= */
+  Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      if (id != null) 'id': id, // ⬅️ update saja
       'kategori_id': kategoriId,
       'nama_alat': nama,
       'stok_total': stokTotal,
@@ -35,16 +35,17 @@ class Alat {
     };
   }
 
-  factory Alat.fromJson(Map<String, dynamic> json) {
+  /* ================= DB → MODEL ================= */
+  factory Alat.fromMap(Map<String, dynamic> map) {
     return Alat(
-      id: json['id'],
-      kategoriId: json['kategori_id'],
-      nama: json['nama_alat'],
-      stokTotal: json['stok_total'],
-      stokTersedia: json['stok_tersedia'],
-      kondisi: json['kondisi'],
-      isActive: json['is_active'] ?? true,
-      fotoUrl: json['foto_url'],
+      id: map['id'],
+      kategoriId: map['kategori_id'],
+      nama: map['nama_alat'],
+      stokTotal: map['stok_total'],
+      stokTersedia: map['stok_tersedia'],
+      kondisi: map['kondisi'],
+      isActive: map['is_active'] ?? true,
+      fotoUrl: map['foto_url'],
     );
   }
 }

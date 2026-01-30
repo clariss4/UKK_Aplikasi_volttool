@@ -2,13 +2,10 @@ import 'package:apk_peminjaman/Widgets/main_drawer.dart';
 import 'package:apk_peminjaman/Widgets/peminjaman_list.dart';
 import 'package:apk_peminjaman/controllers/auth_controller.dart';
 import 'package:apk_peminjaman/models/data_dashboard.dart';
-import 'package:apk_peminjaman/screens/log_aktivitas_screen.dart';
-import 'package:apk_peminjaman/screens/manajemen_alat.dart';
-import 'package:apk_peminjaman/screens/user_screen.dart';
 import 'package:apk_peminjaman/widgets/activity_list.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'login_screen.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -84,86 +81,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  // ================= DRAWER =================
-  Drawer _buildDrawer() {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Color(0xFFFB923C)),
-            child: Text(
-              'Menu Admin',
-              style: TextStyle(color: Colors.white, fontSize: 24),
-            ),
-          ),
-          // ===== HALAMAN MANAJEMEN =====
-          ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Dashboard'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('Manajemen Pengguna'),
-            onTap: () {
-              Navigator.pop(context);
-              // Ganti dengan halaman manajemen user yang sudah dibuat
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ManajemenPenggunaPage(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.inventory_2),
-            title: const Text('Manajemen Alat'),
-            onTap: () {
-              Navigator.pop(context);
-              // Ganti dengan halaman manajemen alat yang sudah dibuat
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ManajemenAlatPage()),
-              );
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.history),
-            title: const Text('Log aktivitas'),
-            onTap: () {
-              Navigator.pop(context);
-              // Ganti dengan halaman manajemen alat yang sudah dibuat
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LogAktivitasPage()),
-              );
-            },
-          ),
-          const Divider(),
-
-          // ===== LOGOUT =====
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
-            onTap: () async {
-              await auth.logout();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (_) => false,
-              );
-            },
-          ),
-        ],
-      ),
     );
   }
 

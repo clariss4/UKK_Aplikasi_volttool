@@ -1,8 +1,8 @@
 import 'package:apk_peminjaman/Widgets/main_drawer.dart';
 import 'package:flutter/material.dart';
-import '../models/log_aktivitas.dart';
-import '../widgets/log_card.dart';
-import '../data_dummy.dart'; // pastikan ini impor data dummy
+import '../../models/log_aktivitas.dart';
+import '../../widgets/log_card.dart';
+import '../../data_dummy.dart'; // pastikan ini impor data dummy
 
 class LogAktivitasPage extends StatefulWidget {
   const LogAktivitasPage({Key? key}) : super(key: key);

@@ -1,6 +1,6 @@
 import 'package:apk_peminjaman/utils/validator.dart';
 import 'package:flutter/material.dart';
-import '../models/user.dart';
+import '../../models/user.dart';
 
 /// Halaman penuh untuk menambah user baru
 class UserFormPage extends StatefulWidget {

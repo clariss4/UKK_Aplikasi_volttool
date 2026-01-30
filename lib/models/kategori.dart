@@ -1,29 +1,31 @@
-import 'package:flutter/material.dart';
+// ==================== FILE: lib/models/kategori.dart ====================
+
 class Kategori {
-  final String id;
+  final String? id; // ⬅️ nullable (aman untuk insert)
   final String nama;
   final bool isActive;
 
   Kategori({
-    required this.id,
+    this.id,
     required this.nama,
     required this.isActive,
   });
 
-  Map<String, dynamic> toJson() {
+  /* ================= MAP → DB ================= */
+  Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      if (id != null) 'id': id, // ⬅️ hanya untuk update
       'nama_kategori': nama,
       'is_active': isActive,
     };
   }
 
-  factory Kategori.fromJson(Map<String, dynamic> json) {
+  /* ================= DB → MODEL ================= */
+  factory Kategori.fromMap(Map<String, dynamic> map) {
     return Kategori(
-      id: json['id'],
-      nama: json['nama_kategori'],
-      isActive: json['is_active'] ?? true,
+      id: map['id'],
+      nama: map['nama_kategori'],
+      isActive: map['is_active'] ?? true,
     );
   }
 }
-

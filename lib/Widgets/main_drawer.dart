@@ -1,17 +1,17 @@
-import 'package:apk_peminjaman/screens/borrow_tool_page.dart';
-import 'package:apk_peminjaman/screens/daftar_alat%20pinjam.dart';
-import 'package:apk_peminjaman/screens/dashboard_petugas_screen.dart';
-import 'package:apk_peminjaman/screens/konfirmasi_peminjaam_screen.dart';
-import 'package:apk_peminjaman/screens/log_aktivitas_screen.dart';
-import 'package:apk_peminjaman/screens/manajemen_peminjaman.dart';
-import 'package:apk_peminjaman/screens/report_page.dart';
-import 'package:apk_peminjaman/screens/return_request_page.dart';
-import 'package:apk_peminjaman/screens/user_screen.dart';
+import 'package:apk_peminjaman/screens/peminjam/borrow_tool_page.dart';
+import 'package:apk_peminjaman/screens/peminjam/daftar_alat%20pinjam.dart';
+import 'package:apk_peminjaman/screens/petugas/dashboard_petugas_screen.dart';
+import 'package:apk_peminjaman/screens/petugas/konfirmasi_peminjaam_screen.dart';
+import 'package:apk_peminjaman/screens/admin/log_aktivitas_screen.dart';
+import 'package:apk_peminjaman/screens/admin/manajemen_peminjaman.dart';
+import 'package:apk_peminjaman/screens/petugas/report_page.dart';
+import 'package:apk_peminjaman/screens/petugas/return_request_page.dart';
+import 'package:apk_peminjaman/screens/admin/user_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:apk_peminjaman/controllers/auth_controller.dart';
-import 'package:apk_peminjaman/screens/dashboard_admin_screen.dart';
+import 'package:apk_peminjaman/screens/admin/dashboard_admin_screen.dart';
 import 'package:apk_peminjaman/screens/login_screen.dart';
-import 'package:apk_peminjaman/screens/manajemen_alat.dart';
+import 'package:apk_peminjaman/screens/admin/manajemen_alat.dart';
 
 class AppDrawer extends StatelessWidget {
   final AuthController auth = AuthController();
