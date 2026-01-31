@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/user.dart';
+import '../../models/user.dart';
 
 class UserCard extends StatelessWidget {
   final User user;
@@ -20,10 +20,8 @@ class UserCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  user.namaLengkap,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                Text(user.namaLengkap,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 IconButton(
                   icon: const Icon(Icons.edit, color: Color(0xFFFF8C42), size: 20),
                   onPressed: onEdit,
@@ -33,12 +31,9 @@ class UserCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Username: ${user.username}', 
-              style: TextStyle(fontSize: 13, color: Colors.grey[700])),
-            Text('Password: ${'•' * 8}', 
-              style: TextStyle(fontSize: 13, color: Colors.grey[700])),
-            Text('Role: ${_getRoleText(user.role)}', 
-              style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+            Text('Username: ${user.username}', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+            Text('Password: ${'•' * 8}', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+            Text('Role: ${_getRoleText(user.role)}', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
             const SizedBox(height: 8),
             Row(
               children: [

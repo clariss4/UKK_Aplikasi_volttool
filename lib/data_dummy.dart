@@ -4,43 +4,43 @@ import 'models/alat.dart';
 import 'models/log_aktivitas.dart';
 
 class DummyData {
-  // ==================== USER ====================
-  static final List<User> userList = [
-    // Petugas
-    User(
-      id: '1',
-      namaLengkap: 'Rudi Santoso',
-      username: 'rudi@volttool.com',
-      password: 'password123',
-      role: 'petugas',
-      isActive: true,
-    ),
-    User(
-      id: '2',
-      namaLengkap: 'Sari Lestari',
-      username: 'sari@volttool.com',
-      password: 'password123',
-      role: 'petugas',
-      isActive: true,
-    ),
-    // Peminjam
-    User(
-      id: '3',
-      namaLengkap: 'Ahmad Fauzi',
-      username: 'ahmad@volttool.com',
-      password: 'password123',
-      role: 'peminjam',
-      isActive: true,
-    ),
-    User(
-      id: '4',
-      namaLengkap: 'Dewi Anggraeni',
-      username: 'dewi@volttool.com',
-      password: 'password123',
-      role: 'peminjam',
-      isActive: false,
-    ),
-  ];
+  // // ==================== USER ====================
+  // static final List<User> userList = [
+  //   // Petugas
+  //   User(
+  //     id: '1',
+  //     namaLengkap: 'Rudi Santoso',
+  //     username: 'rudi@volttool.com',
+  //     password: 'password123',
+  //     role: 'petugas',
+  //     isActive: true,
+  //   ),
+  //   User(
+  //     id: '2',
+  //     namaLengkap: 'Sari Lestari',
+  //     username: 'sari@volttool.com',
+  //     password: 'password123',
+  //     role: 'petugas',
+  //     isActive: true,
+  //   ),
+  //   // Peminjam
+  //   User(
+  //     id: '3',
+  //     namaLengkap: 'Ahmad Fauzi',
+  //     username: 'ahmad@volttool.com',
+  //     password: 'password123',
+  //     role: 'peminjam',
+  //     isActive: true,
+  //   ),
+  //   User(
+  //     id: '4',
+  //     namaLengkap: 'Dewi Anggraeni',
+  //     username: 'dewi@volttool.com',
+  //     password: 'password123',
+  //     role: 'peminjam',
+  //     isActive: false,
+  //   ),
+  // ];
 
   // ==================== KATEGORI ====================
   static final List<Kategori> kategoriList = [

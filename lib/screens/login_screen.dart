@@ -1,7 +1,7 @@
 import 'package:apk_peminjaman/Widgets/colored_text_field.dart';
 import 'package:apk_peminjaman/controllers/auth_controller.dart';
 import 'package:apk_peminjaman/screens/admin/dashboard_admin_screen.dart';
-import 'package:apk_peminjaman/screens/admin/registrer_admin_screen.dart';
+// import 'package:apk_peminjaman/screens/admin/registrer_admin_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -167,25 +167,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 16),
 
-                      // ===== REGISTER LINK =====
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterAdminScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'Registrasi Admin',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 13,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ),
+                      // // ===== REGISTER LINK =====
+                      // GestureDetector(
+                      //   onTap: () {
+                      //     Navigator.push(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (_) => const RegisterAdminScreen(),
+                      //       ),
+                      //     );
+                      //   },
+                      //   child: const Text(
+                      //     'Registrasi Admin',
+                      //     style: TextStyle(
+                      //       fontFamily: 'Inter',
+                      //       fontSize: 13,
+                      //       color: Colors.blue,
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

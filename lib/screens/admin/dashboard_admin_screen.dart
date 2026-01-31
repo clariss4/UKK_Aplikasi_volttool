@@ -61,26 +61,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ),
-      actions: const [
-        Padding(
-          padding: EdgeInsets.only(right: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Color(0xFFFB923C)),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'admin',
-                style: TextStyle(fontSize: 11, color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
