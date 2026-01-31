@@ -4,7 +4,6 @@ class LogAktivitas {
   final String namaUser;
   final String aktivitas;
   final DateTime waktu;
-  final String kategori; // <-- baru
 
   LogAktivitas({
     required this.id,
@@ -12,7 +11,6 @@ class LogAktivitas {
     required this.namaUser,
     required this.aktivitas,
     required this.waktu,
-    required this.kategori, // <-- baru
   });
 
   Map<String, dynamic> toJson() {
@@ -21,7 +19,6 @@ class LogAktivitas {
       'user_id': userId,
       'aktivitas': aktivitas,
       'waktu': waktu.toIso8601String(),
-      'kategori': kategori, // <-- baru
     };
   }
 
@@ -32,7 +29,6 @@ class LogAktivitas {
       namaUser: json['nama_user'] ?? 'Unknown User',
       aktivitas: json['aktivitas'],
       waktu: DateTime.parse(json['waktu']),
-      kategori: json['kategori'] ?? 'Lainnya', // <-- baru
     );
   }
 
@@ -40,16 +36,11 @@ class LogAktivitas {
     final now = DateTime.now();
     final difference = now.difference(waktu);
 
-    if (difference.inMinutes < 1) {
-      return 'Baru saja';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} menit yang lalu';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours} jam yang lalu';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} hari yang lalu';
-    } else {
-      return '${waktu.day}/${waktu.month}/${waktu.year} ${waktu.hour.toString().padLeft(2, '0')}:${waktu.minute.toString().padLeft(2, '0')}';
-    }
+    if (difference.inMinutes < 1) return 'Baru saja';
+    if (difference.inMinutes < 60) return '${difference.inMinutes} menit yang lalu';
+    if (difference.inHours < 24) return '${difference.inHours} jam yang lalu';
+    if (difference.inDays < 7) return '${difference.inDays} hari yang lalu';
+
+    return '${waktu.day}/${waktu.month}/${waktu.year} ${waktu.hour.toString().padLeft(2,'0')}:${waktu.minute.toString().padLeft(2,'0')}';
   }
 }

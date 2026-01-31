@@ -1,29 +1,35 @@
 import 'package:flutter/material.dart';
-import '../models/pengembalian.dart';
-import '../controllers/pengembalian_controller.dart';
+import '../models/peminjaman.dart';
+import '../controllers/peminjaman_controller.dart';
 
-class PerbaruiPengembalianDialog extends StatefulWidget {
-  final Pengembalian pengembalian;
+class PerbaruiPeminjamanDialog extends StatefulWidget {
+  final Peminjaman peminjaman;
 
-  const PerbaruiPengembalianDialog({
+  const PerbaruiPeminjamanDialog({
     super.key,
-    required this.pengembalian,
+    required this.peminjaman,
   });
 
   @override
-  State<PerbaruiPengembalianDialog> createState() => _PerbaruiPengembalianDialogState();
+  State<PerbaruiPeminjamanDialog> createState() => _PerbaruiPeminjamanDialogState();
 }
 
-class _PerbaruiPengembalianDialogState extends State<PerbaruiPengembalianDialog> {
-  late String selectedKondisi;
+class _PerbaruiPeminjamanDialogState extends State<PerbaruiPeminjamanDialog> {
+  late String selectedStatus;
   bool _isLoading = false;
 
-  final List<String> kondisiOptions = ['Baik', 'Rusak', 'Hilang'];
+  final List<String> statusOptions = [
+    'menunggu',
+    'disetujui',
+    'ditolak',
+    'dipinjam',
+    'dikembalikan',
+  ];
 
   @override
   void initState() {
     super.initState();
-    selectedKondisi = widget.pengembalian.kondisi;
+    selectedStatus = widget.peminjaman.status;
   }
 
   @override
@@ -40,58 +46,46 @@ class _PerbaruiPengembalianDialogState extends State<PerbaruiPengembalianDialog>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Perbarui Pengembalian',
+              'Perbarui Peminjaman',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 24),
 
-            if (widget.pengembalian.namaPetugas != null) ...[
-              Text(
-                'Petugas: ${widget.pengembalian.namaPetugas}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-            ],
-
-            Text(
-              'Tanggal Dikembalikan: ${widget.pengembalian.tanggalKembali.toString().substring(0, 10)}',
-              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            // Field readonly tanpa garis bawah tebal (hanya background abu)
+            _buildReadOnlyField('Nama Peminjam', widget.peminjaman.namaPeminjam),
+            const SizedBox(height: 16),
+            _buildReadOnlyField('Username', widget.peminjaman.usernamePeminjam),
+            const SizedBox(height: 16),
+            _buildReadOnlyField(
+              'Tanggal Pinjam - Batas',
+              '${widget.peminjaman.tanggalPinjam.toString().substring(0, 10)} - ${widget.peminjaman.batasPengembalian.toString().substring(0, 10)}',
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             Text(
-              'Kondisi Alat',
+              'Status',
               style: TextStyle(fontSize: 14, color: Colors.grey[700], fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: selectedKondisi,
-              items: kondisiOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: _isLoading ? null : (v) => setState(() => selectedKondisi = v!),
+              value: selectedStatus,
+              items: statusOptions.map((status) {
+                return DropdownMenuItem<String>(
+                  value: status,
+                  child: Text(
+                    status[0].toUpperCase() + status.substring(1),
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                );
+              }).toList(),
+              onChanged: _isLoading ? null : (value) {
+                if (value != null) setState(() => selectedStatus = value);
+              },
               decoration: InputDecoration(
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
-
-            if (widget.pengembalian.terlambat) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: const [
-                  Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
-                  SizedBox(width: 8),
-                  Text('Terlambat', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 14)),
-                ],
-              ),
-            ],
-
-            if (widget.pengembalian.denda != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Denda: ${widget.pengembalian.denda!.jenisDenda} - Rp ${widget.pengembalian.denda!.jumlahDenda.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-            ],
 
             const SizedBox(height: 32),
 
@@ -133,28 +127,49 @@ class _PerbaruiPengembalianDialogState extends State<PerbaruiPengembalianDialog>
     );
   }
 
-  Future<void> _simpan(BuildContext context) async {
-    setState(() => _isLoading = true);
-
-    final controller = PengembalianController();
-
-    await controller.updateKondisi(widget.pengembalian.id, selectedKondisi.toLowerCase());
-
-    setState(() => _isLoading = false);
-
-    if (context.mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pengembalian berhasil diperbarui')),
-      );
-    }
+  Widget _buildReadOnlyField(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[700], fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(value, style: const TextStyle(fontSize: 14)),
+        ),
+      ],
+    );
   }
 
+ Future<void> _simpan(BuildContext context) async {
+  setState(() => _isLoading = true);
+
+  final controller = PeminjamanController();
+
+  await controller.updateStatus(  // ← cukup await saja, tanpa final success
+    widget.peminjaman.id,
+    selectedStatus,
+  );
+
+  setState(() => _isLoading = false);
+
+  if (context.mounted) {
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Peminjaman berhasil diperbarui')),
+    );
+  }
+}
   Future<void> _konfirmasiHapus(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Pengembalian?'),
+        title: const Text('Hapus Peminjaman?'),
         content: const Text('Data akan dihapus permanen.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
@@ -167,8 +182,8 @@ class _PerbaruiPengembalianDialogState extends State<PerbaruiPengembalianDialog>
     );
 
     if (confirm == true && context.mounted) {
-      final controller = PengembalianController();
-      await controller.hapusPengembalian(widget.pengembalian.id);
+      final controller = PeminjamanController();
+      await controller.hapusPeminjaman(widget.peminjaman.id);
       Navigator.pop(context);
     }
   }

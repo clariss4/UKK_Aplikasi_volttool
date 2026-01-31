@@ -1,4 +1,12 @@
 import 'package:apk_peminjaman/Widgets/main_drawer.dart';
+import 'package:apk_peminjaman/Widgets/peminjaman_card.dart';
+import 'package:apk_peminjaman/Widgets/pengembalian_manajemen_card.dart';
+import 'package:apk_peminjaman/Widgets/perbarui_peminjaman_dialog.dart';
+import 'package:apk_peminjaman/Widgets/perbarui_pengembalian_dialog.dart';
+import 'package:apk_peminjaman/controllers/peminjaman_controller.dart';
+import 'package:apk_peminjaman/controllers/pengembalian_controller.dart';
+import 'package:apk_peminjaman/models/peminjaman.dart';
+import 'package:apk_peminjaman/models/pengembalian.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -11,10 +19,22 @@ class ManajemenPeminjamanScreen extends StatefulWidget {
 }
 
 class _ManajemenPeminjamanScreenState extends State<ManajemenPeminjamanScreen> {
-  static const primaryColor = Color(0xFFFB923C);
-  static const bgColor = Color(0xFFF7F2EC);
+  static const Color primaryColor = Color(0xFFFB923C);
+  static const Color bgColor = Color(0xFFF7F2EC);
 
-  bool isPeminjaman = false; // default ke Pengembalian
+  bool isPeminjamanTab = true;
+
+  final PeminjamanController peminjamanController = PeminjamanController();
+  final PengembalianController pengembalianController =
+      PengembalianController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Load data awal & subscribe realtime
+    peminjamanController.loadPeminjaman();
+    pengembalianController.loadPengembalian();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,27 +42,126 @@ class _ManajemenPeminjamanScreenState extends State<ManajemenPeminjamanScreen> {
       backgroundColor: bgColor,
       drawer: AppDrawer(currentPage: "Manajemen Peminjaman & Pengembalian"),
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildSearch(),
-            const SizedBox(height: 14),
-            _buildTabSwitcher(),
-            const SizedBox(height: 16),
+      body: Column(
+        children: [
+          // Search & Filter
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Cari nama pengguna...',
+                      hintStyle: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 14,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.tune, color: Colors.white, size: 24),
+                ),
+              ],
+            ),
+          ),
 
-            // dummy card
-            _buildCard(status: 'Terlambat'),
-            _buildCard(status: 'Dikembalikan'),
-            _buildCard(status: 'Hilang'),
-            _buildCard(status: 'Rusak'),
-          ],
-        ),
+          const SizedBox(height: 16),
+
+          // Tab Switcher
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => isPeminjamanTab = true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isPeminjamanTab
+                              ? primaryColor
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Text(
+                          'Peminjaman',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isPeminjamanTab
+                                ? Colors.white
+                                : Colors.black87,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => isPeminjamanTab = false),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: !isPeminjamanTab
+                              ? primaryColor
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Text(
+                          'Pengembalian',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: !isPeminjamanTab
+                                ? Colors.white
+                                : Colors.black87,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // List Realtime
+          Expanded(
+            child: isPeminjamanTab
+                ? _buildPeminjamanList()
+                : _buildPengembalianList(),
+          ),
+        ],
       ),
     );
   }
 
-  // ================= APPBAR =================
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: primaryColor,
@@ -51,14 +170,14 @@ class _ManajemenPeminjamanScreenState extends State<ManajemenPeminjamanScreen> {
       toolbarHeight: 110,
       titleSpacing: 0,
       title: Padding(
-        padding: const EdgeInsets.only(top: 35, left: 4),
+        padding: const EdgeInsets.only(top: 35, left: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Manajemen',
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
               ),
@@ -66,8 +185,8 @@ class _ManajemenPeminjamanScreenState extends State<ManajemenPeminjamanScreen> {
             Text(
               'Peminjaman & Pengembalian',
               style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
@@ -76,19 +195,18 @@ class _ManajemenPeminjamanScreenState extends State<ManajemenPeminjamanScreen> {
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: 16),
+          padding: const EdgeInsets.only(right: 16, top: 35),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: const [
               CircleAvatar(
-                radius: 16,
+                radius: 18,
                 backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: primaryColor),
+                child: Icon(Icons.person, color: primaryColor, size: 24),
               ),
               SizedBox(height: 4),
               Text(
                 'Admin',
-                style: TextStyle(fontSize: 11, color: Colors.white),
+                style: TextStyle(fontSize: 12, color: Colors.white),
               ),
             ],
           ),
@@ -97,164 +215,215 @@ class _ManajemenPeminjamanScreenState extends State<ManajemenPeminjamanScreen> {
     );
   }
 
-  // ================= SEARCH =================
-  Widget _buildSearch() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Cari nama pengguna...',
-              filled: true,
-              fillColor: Colors.white,
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
+  Widget _buildPeminjamanList() {
+    return StreamBuilder<List<Peminjaman>>(
+      stream: peminjamanController.streamPeminjaman,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: primaryColor),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Terjadi kesalahan saat memuat data',
+                style: const TextStyle(color: Colors.red, fontSize: 16),
+                textAlign: TextAlign.center,
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        GestureDetector(
-          onTap: () {}, // nanti filter modal
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: primaryColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.tune, color: Colors.white),
-          ),
-        ),
-      ],
-    );
-  }
+          );
+        }
 
-  // ================= TAB =================
-  Widget _buildTabSwitcher() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        children: [
-          _tabItem('Peminjaman', isPeminjaman, () {
-            setState(() => isPeminjaman = true);
-          }),
-          _tabItem('Pengembalian', !isPeminjaman, () {
-            setState(() => isPeminjaman = false);
-          }),
-        ],
-      ),
-    );
-  }
+        final list = snapshot.data ?? [];
 
-  Widget _tabItem(String title, bool active, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? primaryColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: active ? Colors.white : Colors.black87,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ================= CARD =================
-  Widget _buildCard({required String status}) {
-    Color statusColor;
-    switch (status) {
-      case 'Terlambat':
-        statusColor = Colors.redAccent;
-        break;
-      case 'Dikembalikan':
-        statusColor = Colors.green;
-        break;
-      case 'Hilang':
-        statusColor = Colors.red;
-        break;
-      default:
-        statusColor = Colors.orange;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Clarissa Aurelia Qurnia Putri',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          const Text('Username: clarissa456@volttool.com'),
-          const Text('Petugas: Sintia wiwik dwi'),
-          const SizedBox(height: 6),
-          const Text('Tanggal pengajuan: 10/01/2026 - 12/01/2026'),
-          const Text('Dikembalikan: 12/01/2026'),
-          const Text('Kondisi: Baik'),
-
-          const SizedBox(height: 8),
-          const Text('Denda:'),
-          const Text(
-            '• Keterlambatan: Rp. 5.000',
-            style: TextStyle(color: Colors.grey),
-          ),
-
-          const SizedBox(height: 12),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+        if (list.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.hourglass_empty, size: 80, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text(
+                  'Belum ada data peminjaman',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                onPressed: () {},
-                icon: const Icon(Icons.edit, size: 16),
-                label: const Text('Edit'),
+                const SizedBox(height: 8),
+                Text(
+                  'Tambahkan peminjaman baru untuk memulai',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          itemCount: list.length,
+          itemBuilder: (context, index) {
+            final item = list[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: PeminjamanCard(
+                peminjaman: item,
+                onLihat: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Lihat detail peminjaman')),
+                  );
+                },
+                onEdit: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) =>
+                        PerbaruiPeminjamanDialog(peminjaman: item),
+                  );
+                },
+                onHapus: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Hapus Peminjaman?'),
+                      content: const Text('Data akan dihapus permanen.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Batal'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text(
+                            'Hapus',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true) {
+                    await peminjamanController.hapusPeminjaman(item.id);
+                  }
+                },
               ),
-            ],
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPengembalianList() {
+    return StreamBuilder<List<Pengembalian>>(
+      stream: pengembalianController.streamPengembalian,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: primaryColor),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Terjadi kesalahan saat memuat data',
+                style: const TextStyle(color: Colors.red, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        }
+
+        final list = snapshot.data ?? [];
+
+        if (list.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.hourglass_empty, size: 80, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text(
+                  'Belum ada data pengembalian',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Proses pengembalian dari peminjaman untuk memulai',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          itemCount: list.length,
+          itemBuilder: (context, index) {
+            final item = list[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: PengembalianManajemenCard(
+                pengembalian: item,
+                onLihat: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lihat detail pengembalian')),
+                  );
+                },
+                onEdit: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) =>
+                        PerbaruiPengembalianDialog(pengembalian: item),
+                  );
+                },
+                onHapus: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Hapus Pengembalian?'),
+                      content: const Text('Data akan dihapus permanen.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Batal'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text(
+                            'Hapus',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true) {
+                    await pengembalianController.hapusPengembalian(item.id);
+                  }
+                },
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

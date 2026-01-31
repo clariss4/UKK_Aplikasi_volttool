@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/kategori.dart';
 import '../models/alat.dart';
@@ -6,18 +7,20 @@ import '../models/alat.dart';
 class DatabaseService {
   final SupabaseClient _client = Supabase.instance.client;
 
-  /* ================= USER ================= */
+  // ================= USER =================
 
-  /// STREAM REALTIME USERS
   Stream<List<Map<String, dynamic>>> streamUsers() {
-    return _client
-        .from('users')
-        .stream(primaryKey: ['id'])
-        .order('created_at')
-        .map((data) => List<Map<String, dynamic>>.from(data));
+    return Stream.periodic(const Duration(milliseconds: 500)).asyncExpand((
+      _,
+    ) async* {
+      final response = await _client
+          .from('users')
+          .select()
+          .order('created_at', ascending: false);
+      yield List<Map<String, dynamic>>.from(response);
+    });
   }
 
-  /// GET ALL USERS
   Future<List<Map<String, dynamic>>> getUsers() async {
     final response = await _client
         .from('users')
@@ -27,33 +30,29 @@ class DatabaseService {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  /// GET USER BY ID
   Future<Map<String, dynamic>?> getUserById(String id) async {
     final response = await _client
         .from('users')
         .select()
         .eq('id', id)
-        .single();
+        .maybeSingle();
     return response;
   }
 
-  /// INSERT USER (bisa semua role)
   Future<void> insertUser(Map<String, dynamic> data) async {
-    data['is_active'] = true; // pastikan selalu aktif saat insert
+    data['is_active'] = true;
     await _client.from('users').insert(data);
   }
 
-  /// UPDATE USER
   Future<void> updateUser(String id, Map<String, dynamic> data) async {
     await _client.from('users').update(data).eq('id', id);
   }
 
-  /// SOFT DELETE USER
   Future<void> deleteUser(String id) async {
     await _client.from('users').update({'is_active': false}).eq('id', id);
   }
 
-  /* ================= KATEGORI ALAT ================= */
+  // ================= KATEGORI ALAT =================
 
   Stream<List<Kategori>> streamKategori() {
     return _client
@@ -93,10 +92,11 @@ class DatabaseService {
   Future<void> deleteKategori(String id) async {
     await _client
         .from('kategori_alat')
-        .update({'is_active': false}).eq('id', id);
+        .update({'is_active': false})
+        .eq('id', id);
   }
 
-  /* ================= ALAT ================= */
+  // ================= ALAT =================
 
   Stream<List<Alat>> streamAlat() {
     return _client
@@ -117,24 +117,26 @@ class DatabaseService {
   }
 
   Future<Alat?> getAlatById(String id) async {
-    final response = await _client
-        .from('alat')
-        .select()
-        .eq('id', id)
-        .single();
+    final response = await _client.from('alat').select().eq('id', id).single();
     return Alat.fromJson(response);
   }
 
-  Future<void> insertAlat(Map<String, dynamic> data, {File? fotoFile}) async {
+  Future<void> insertAlat(Map<String, dynamic> data, {dynamic fotoFile}) async {
     if (fotoFile != null) {
       final fotoUrl = await uploadFotoAlat(fotoFile);
       data['foto_url'] = fotoUrl;
     }
-    data['is_active'] = true; // pastikan aktif
+    data['is_active'] = true;
+    data['stok_tersedia'] =
+        data['stok_total']; // default tersedia = total saat insert
     await _client.from('alat').insert(data);
   }
 
-  Future<void> updateAlat(String id, Map<String, dynamic> data, {File? fotoFile}) async {
+  Future<void> updateAlat(
+    String id,
+    Map<String, dynamic> data, {
+    dynamic fotoFile,
+  }) async {
     if (fotoFile != null) {
       final fotoUrl = await uploadFotoAlat(fotoFile);
       data['foto_url'] = fotoUrl;
@@ -146,10 +148,27 @@ class DatabaseService {
     await _client.from('alat').update({'is_active': false}).eq('id', id);
   }
 
-  Future<String> uploadFotoAlat(File file) async {
+  /// Upload foto yang support **mobile (File)** dan **web (Uint8List)**
+  Future<String> uploadFotoAlat(dynamic file) async {
     final fileName = 'alat_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final bytes = await file.readAsBytes();
-    await _client.storage.from('alat').uploadBinary(
+
+    Uint8List bytes;
+
+    if (kIsWeb) {
+      if (file is! Uint8List) {
+        throw Exception('Untuk web, file harus berupa Uint8List');
+      }
+      bytes = file;
+    } else {
+      if (file is! File) {
+        throw Exception('Untuk mobile, file harus berupa File');
+      }
+      bytes = await file.readAsBytes();
+    }
+
+    await _client.storage
+        .from('alat')
+        .uploadBinary(
           fileName,
           bytes,
           fileOptions: const FileOptions(
@@ -157,10 +176,11 @@ class DatabaseService {
             contentType: 'image/jpeg',
           ),
         );
+
     return _client.storage.from('alat').getPublicUrl(fileName);
   }
 
-  /* ================= PEMINJAMAN ================= */
+  // ================= PEMINJAMAN =================
 
   Stream<List<Map<String, dynamic>>> streamPeminjaman() {
     return _client
@@ -172,7 +192,11 @@ class DatabaseService {
   Future<List<Map<String, dynamic>>> getPeminjaman() async {
     final response = await _client
         .from('peminjaman')
-        .select()
+        .select('''
+        *,
+        peminjam:users!fk_peminjam (nama_lengkap, username),          // pakai fk_peminjam
+        petugas:users!fk_petugas (nama_lengkap)                       // kalau petugas_id punya constraint fk_petugas
+      ''')
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
@@ -180,37 +204,38 @@ class DatabaseService {
   Future<Map<String, dynamic>?> getPeminjamanById(String id) async {
     final response = await _client
         .from('peminjaman')
-        .select()
+        .select('''
+        *,
+        peminjam:users!fk_peminjam (nama_lengkap, username),
+        petugas:users!fk_petugas (nama_lengkap),
+        peminjaman_detail (*, alat (nama_alat, foto_url))
+      ''')
         .eq('id', id)
-        .single();
+        .maybeSingle();
     return response;
-  }
-
-  Future<List<Map<String, dynamic>>> getPeminjamanDetail(String peminjamanId) async {
-    final response = await _client
-        .from('peminjaman_detail')
-        .select('*, alat(*)')
-        .eq('peminjaman_id', peminjamanId);
-    return List<Map<String, dynamic>>.from(response);
   }
 
   Future<void> insertPeminjaman({
     required Map<String, dynamic> peminjamanData,
     required List<Map<String, dynamic>> detailData,
   }) async {
-    final peminjamanResponse = await _client
-        .from('peminjaman')
-        .insert(peminjamanData)
-        .select()
-        .single();
+    try {
+      final peminjamanResponse = await _client
+          .from('peminjaman')
+          .insert(peminjamanData)
+          .select()
+          .single();
 
-    final peminjamanId = peminjamanResponse['id'];
+      final peminjamanId = peminjamanResponse['id'];
 
-    final detailWithId = detailData.map((detail) {
-      return {...detail, 'peminjaman_id': peminjamanId};
-    }).toList();
+      final detailWithId = detailData.map((detail) {
+        return {...detail, 'peminjaman_id': peminjamanId};
+      }).toList();
 
-    await _client.from('peminjaman_detail').insert(detailWithId);
+      await _client.from('peminjaman_detail').insert(detailWithId);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> updatePeminjaman(String id, Map<String, dynamic> data) async {
@@ -222,19 +247,27 @@ class DatabaseService {
     await _client.from('peminjaman').delete().eq('id', id);
   }
 
-  /* ================= PENGEMBALIAN ================= */
+  // ================= PENGEMBALIAN =================
 
   Stream<List<Map<String, dynamic>>> streamPengembalian() {
     return _client
         .from('pengembalian')
         .stream(primaryKey: ['id'])
-        .order('created_at', ascending: false);
+        .order('tanggal_kembali', ascending: false);
   }
 
   Future<List<Map<String, dynamic>>> getPengembalian() async {
     final response = await _client
         .from('pengembalian')
-        .select('*, peminjaman(*)')
+        .select('''
+        *,
+        petugas:users!fk_petugas_kembali (nama_lengkap),             // pakai fk_petugas_kembali
+        peminjaman (
+          *,
+          peminjam:users!fk_peminjam (nama_lengkap, username)        // pakai fk_peminjam
+        ),
+        denda (*)
+      ''')
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
@@ -242,9 +275,14 @@ class DatabaseService {
   Future<Map<String, dynamic>?> getPengembalianById(String id) async {
     final response = await _client
         .from('pengembalian')
-        .select('*, peminjaman(*)')
+        .select('''
+          *,
+          petugas:users!petugas_id (nama_lengkap),
+          peminjaman (*),
+          denda (*)
+        ''')
         .eq('id', id)
-        .single();
+        .maybeSingle();
     return response;
   }
 
@@ -261,41 +299,17 @@ class DatabaseService {
     await _client.from('pengembalian').delete().eq('id', id);
   }
 
-  /* ================= DENDA ================= */
+  // ================= DENDA =================
 
-  Stream<List<Map<String, dynamic>>> streamDenda() {
-    return _client
-        .from('denda')
-        .stream(primaryKey: ['id'])
-        .order('created_at', ascending: false);
-  }
-
-  Future<List<Map<String, dynamic>>> getDenda() async {
-    final response = await _client
-        .from('denda')
-        .select('*, pengembalian(*)')
-        .order('created_at', ascending: false);
-    return List<Map<String, dynamic>>.from(response);
-  }
-
-  Future<Map<String, dynamic>?> getDendaById(String id) async {
-    final response = await _client
-        .from('denda')
-        .select('*, pengembalian(*)')
-        .eq('id', id)
-        .single();
-    return response;
-  }
-
-  Future<List<Map<String, dynamic>>> getDendaByPengembalianId(String pengembalianId) async {
-    final response = await _client
-        .from('denda')
-        .select()
-        .eq('pengembalian_id', pengembalianId);
-    return List<Map<String, dynamic>>.from(response);
+  Future<void> insertDenda(Map<String, dynamic> data) async {
+    await _client.from('denda').insert(data);
   }
 
   Future<void> updateDenda(String id, Map<String, dynamic> data) async {
     await _client.from('denda').update(data).eq('id', id);
+  }
+
+  Future<void> deleteDenda(String id) async {
+    await _client.from('denda').delete().eq('id', id);
   }
 }

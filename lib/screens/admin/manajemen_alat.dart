@@ -1,5 +1,3 @@
-// ==================== FILE: lib/screens/manajemen_alat_page.dart ====================
-
 import 'package:apk_peminjaman/Widgets/main_drawer.dart';
 import 'package:flutter/material.dart';
 import '../../controllers/auth_controller.dart';

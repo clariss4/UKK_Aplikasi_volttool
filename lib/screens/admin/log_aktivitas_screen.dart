@@ -13,12 +13,12 @@ class LogAktivitasPage extends StatefulWidget {
 
 class _LogAktivitasPageState extends State<LogAktivitasPage> {
   final searchController = TextEditingController();
-  String selectedFilter = 'Semua';
   DateTime? selectedDate;
 
   // Gunakan data dummy
-  final logList = DummyData.logList;
+  final List<LogAktivitas> logList = DummyData.logList;
 
+  // Filter logs berdasarkan pencarian dan tanggal
   List<LogAktivitas> get filteredLogs {
     var filtered = logList;
 
@@ -35,27 +35,6 @@ class _LogAktivitasPageState extends State<LogAktivitasPage> {
                 ),
           )
           .toList();
-    }
-
-    // ===================== FILTER KATEGORI =====================
-    if (selectedFilter != 'Semua') {
-      filtered = filtered.where((log) {
-        switch (selectedFilter) {
-          case 'Login/Logout':
-            return log.aktivitas.toLowerCase().contains('login') ||
-                log.aktivitas.toLowerCase().contains('logout');
-          case 'Peminjaman':
-            return log.aktivitas.toLowerCase().contains('pinjam') ||
-                log.aktivitas.toLowerCase().contains('kembali');
-          case 'Manajemen Alat':
-            return log.aktivitas.toLowerCase().contains('alat');
-          case 'Manajemen User':
-            return log.aktivitas.toLowerCase().contains('user') ||
-                log.aktivitas.toLowerCase().contains('pengguna');
-          default:
-            return true;
-        }
-      }).toList();
     }
 
     // ===================== FILTER TANGGAL =====================
@@ -79,12 +58,11 @@ class _LogAktivitasPageState extends State<LogAktivitasPage> {
       backgroundColor: const Color(0xFFF5F5F5),
       drawer: AppDrawer(currentPage: 'Log Aktivitas'),
       appBar: _buildAppBar(),
-      body: Column(
-        children: [_buildSearchBar(), _buildFilterSection(), _buildLogList()],
-      ),
+      body: Column(children: [_buildSearchBar(), _buildLogList()]),
     );
   }
 
+  // ===================== APPBAR =====================
   AppBar _buildAppBar() {
     return AppBar(
       backgroundColor: const Color(0xFFFF8C42),
@@ -109,29 +87,10 @@ class _LogAktivitasPageState extends State<LogAktivitasPage> {
           ],
         ),
       ),
-      actions: const [
-        Padding(
-          padding: EdgeInsets.only(right: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Color(0xFFFF8C42)),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Admin',
-                style: TextStyle(color: Colors.white, fontSize: 11),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
+  // ===================== SEARCH BAR + DATE PICKER =====================
   Widget _buildSearchBar() {
     return Container(
       color: const Color(0xFFFF8C42),
@@ -146,7 +105,7 @@ class _LogAktivitasPageState extends State<LogAktivitasPage> {
               ),
               child: TextField(
                 controller: searchController,
-                onChanged: (value) => setState(() {}),
+                onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: 'Cari aktivitas atau user...',
                   border: InputBorder.none,
@@ -180,49 +139,7 @@ class _LogAktivitasPageState extends State<LogAktivitasPage> {
     );
   }
 
-  Widget _buildFilterSection() {
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          _buildFilterChip('Semua'),
-          _buildFilterChip('Login/Logout'),
-          _buildFilterChip('Peminjaman'),
-          _buildFilterChip('Manajemen Alat'),
-          _buildFilterChip('Manajemen User'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label) {
-    final isSelected = selectedFilter == label;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFFFF8C42),
-          ),
-        ),
-        selected: isSelected,
-        backgroundColor: Colors.white,
-        selectedColor: const Color(0xFFFF8C42),
-        side: const BorderSide(color: Color(0xFFFF8C42)),
-        onSelected: (_) {
-          setState(() {
-            selectedFilter = label;
-          });
-        },
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-    );
-  }
-
+  // ===================== LOG LIST =====================
   Widget _buildLogList() {
     final logs = filteredLogs;
     return Expanded(
@@ -241,6 +158,7 @@ class _LogAktivitasPageState extends State<LogAktivitasPage> {
     );
   }
 
+  // ===================== DATE PICKER =====================
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,

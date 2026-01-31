@@ -82,7 +82,7 @@ class DummyData {
       namaUser: 'Admin Sistem',
       aktivitas: 'Login ke sistem',
       waktu: DateTime.now().subtract(const Duration(minutes: 5)),
-      kategori: 'Login',
+     
     ),
     LogAktivitas(
       id: '2',
@@ -90,7 +90,7 @@ class DummyData {
       namaUser: 'Petugas Lab',
       aktivitas: 'Menambahkan alat baru "Tang Potong"',
       waktu: DateTime.now().subtract(const Duration(minutes: 15)),
-      kategori: 'Alat',
+      
     ),
     LogAktivitas(
       id: '3',
@@ -98,7 +98,7 @@ class DummyData {
       namaUser: 'Ahmad Fauzi',
       aktivitas: 'Meminjam 2 unit Multimeter Digital',
       waktu: DateTime.now().subtract(const Duration(hours: 1)),
-      kategori: 'Peminjaman',
+    
     ),
     LogAktivitas(
       id: '4',
@@ -106,7 +106,7 @@ class DummyData {
       namaUser: 'Admin Sistem',
       aktivitas: 'Mengembalikan alat "Tang Tangan"',
       waktu: DateTime.now().subtract(const Duration(hours: 2)),
-      kategori: 'Pengembalian',
+     
     ),
     LogAktivitas(
       id: '5',
@@ -114,7 +114,7 @@ class DummyData {
       namaUser: 'Petugas Lab',
       aktivitas: 'Menambahkan kategori "Alat Las"',
       waktu: DateTime.now().subtract(const Duration(days: 1)),
-      kategori: 'Kategori',
+      
     ),
   ];
 }

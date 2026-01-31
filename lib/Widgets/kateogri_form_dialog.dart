@@ -1,10 +1,9 @@
-// ==================== FILE: lib/widgets/kateogri_form_dialog.dart ====================
-
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 
 class KategoriFormDialog extends StatefulWidget {
-  final Map<String, dynamic>? kategori; // ✅ Tetap Map untuk backward compatibility
+  final Map<String, dynamic>?
+  kategori; // ✅ Tetap Map untuk backward compatibility
 
   const KategoriFormDialog({super.key, this.kategori});
 
@@ -28,7 +27,9 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.kategori == null ? 'Tambah Kategori' : 'Edit Kategori'),
+      title: Text(
+        widget.kategori == null ? 'Tambah Kategori' : 'Edit Kategori',
+      ),
       content: Form(
         key: _formKey,
         child: TextFormField(
@@ -63,10 +64,7 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
     setState(() => _isLoading = true);
 
     try {
-      final data = {
-        'nama_kategori': namaCtrl.text,
-        'is_active': true,
-      };
+      final data = {'nama_kategori': namaCtrl.text, 'is_active': true};
 
       if (widget.kategori == null) {
         await _db.insertKategori(data);
@@ -78,9 +76,11 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.kategori == null
-                ? 'Kategori berhasil ditambahkan'
-                : 'Kategori berhasil diupdate'),
+            content: Text(
+              widget.kategori == null
+                  ? 'Kategori berhasil ditambahkan'
+                  : 'Kategori berhasil diupdate',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -88,10 +88,7 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {

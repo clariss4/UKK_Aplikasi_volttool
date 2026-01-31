@@ -1,5 +1,3 @@
-// ==================== FILE: lib/widgets/alat_card.dart ====================
-
 import 'package:flutter/material.dart';
 import '../models/alat.dart';
 import '../services/database_service.dart';
