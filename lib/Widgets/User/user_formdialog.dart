@@ -239,6 +239,7 @@ class _UserFormDialogState extends State<UserFormDialog> {
                     if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
                       return 'Username hanya boleh huruf, angka, dan underscore';
                     }
+                    
                     return null;
                   },
                 ),

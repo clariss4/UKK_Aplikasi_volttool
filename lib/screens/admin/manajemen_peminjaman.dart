@@ -185,7 +185,7 @@ class _ManajemenPeminjamanScreenState extends State<ManajemenPeminjamanScreen> {
             Text(
               'Peminjaman & Pengembalian',
               style: GoogleFonts.inter(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
@@ -193,25 +193,6 @@ class _ManajemenPeminjamanScreenState extends State<ManajemenPeminjamanScreen> {
           ],
         ),
       ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16, top: 35),
-          child: Column(
-            children: const [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: primaryColor, size: 24),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Admin',
-                style: TextStyle(fontSize: 12, color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

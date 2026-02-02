@@ -1,65 +1,73 @@
-// ==================== FILE: lib/controllers/kategori_controller.dart ====================
-
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../models/kategori.dart';
 import '../services/database_service.dart';
 
 class KategoriController extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
-  List<Kategori> kategoriList = [];
-  bool isLoading = false;
 
-  /* ================= LOAD KATEGORI ================= */
-  Future<void> loadKategori() async {
+  List<Kategori> kategoriList = [];
+  bool isLoading = true;
+  StreamSubscription<List<Kategori>>? _kategoriSub;
+
+  KategoriController() {
+    _startListening();
+  }
+
+  void _startListening() {
+    _kategoriSub?.cancel();
     isLoading = true;
     notifyListeners();
 
-    try {
-      kategoriList = await _db.getKategori();
-    } catch (e) {
-      debugPrint('Error loading kategori: $e');
-      kategoriList = [];
-    }
-
-    isLoading = false;
-    notifyListeners();
+    _kategoriSub = _db.streamKategori().listen((data) {
+      kategoriList = data;
+      isLoading = false;
+      notifyListeners();
+    }, onError: (e) {
+      debugPrint('Stream kategori error: $e');
+      isLoading = false;
+      notifyListeners();
+    });
   }
 
-  /* ================= TAMBAH KATEGORI ================= */
-  Future<void> tambahKategori(String nama) async {
+  // ================= INSERT =================
+  Future<void> tambahKategori(String namaKategori) async {
     try {
-      await _db.insertKategori({
-        'nama_kategori': nama,
-        'is_active': true,
-      });
-      await loadKategori();
+      final kategori = Kategori(id: '', namaKategori: namaKategori);
+      await _db.insertKategori(kategori.toInsertMap());
+      // Stream otomatis update → UI tidak perlu reload
     } catch (e) {
-      debugPrint('Error insert kategori: $e');
+      debugPrint('Error tambah kategori: $e');
       rethrow;
     }
   }
 
-  /* ================= UPDATE KATEGORI ================= */
-  Future<void> updateKategori(String id, String nama) async {
+  // ================= UPDATE =================
+  Future<void> updateKategori(String id, String namaKategori) async {
     try {
-      await _db.updateKategori(id, {
-        'nama_kategori': nama,
-      });
-      await loadKategori();
+      final kategori = Kategori(id: id, namaKategori: namaKategori);
+      await _db.updateKategori(id, kategori.toUpdateMap());
+      // Stream otomatis update → UI tidak perlu reload
     } catch (e) {
       debugPrint('Error update kategori: $e');
       rethrow;
     }
   }
 
-  /* ================= DELETE KATEGORI ================= */
+  // ================= DELETE (SOFT) =================
   Future<void> deleteKategori(String id) async {
     try {
       await _db.deleteKategori(id);
-      await loadKategori();
+      // Stream otomatis update → UI tidak perlu reload
     } catch (e) {
       debugPrint('Error delete kategori: $e');
       rethrow;
     }
+  }
+
+  @override
+  void dispose() {
+    _kategoriSub?.cancel();
+    super.dispose();
   }
 }

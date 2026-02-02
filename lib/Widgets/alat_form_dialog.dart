@@ -1,10 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../models/kategori.dart';
 import '../models/alat.dart';
-import '../services/database_service.dart';
+import '../models/kategori.dart';
 
 class AlatFormDialog extends StatefulWidget {
   final Alat? alat;
@@ -17,294 +19,375 @@ class AlatFormDialog extends StatefulWidget {
 }
 
 class _AlatFormDialogState extends State<AlatFormDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _db = DatabaseService();
-  final _picker = ImagePicker();
+  late TextEditingController namaController;
+  late TextEditingController kondisiController;
+  late TextEditingController stokTotalController;
+  late TextEditingController stokTersediaController;
+  late bool isActive;
 
-  late TextEditingController namaCtrl;
-  late TextEditingController stokCtrl;
+  String? selectedKategoriId;
 
-  String? kategoriId;
-  String kondisi = 'baik';
+  String? errorNama;
+  String? errorKategori;
+  String? errorStokTotal;
+  String? errorStokTersedia;
+  String? errorFoto;
+  String? errorStatus;
 
-  Uint8List? _fotoBytes; // Hanya untuk web (bytes gambar baru)
-  String? _existingFotoUrl; // URL dari database (sudah ada sebelumnya)
+  bool isSubmitting = false;
 
-  bool _isLoading = false;
+  static const Color primaryOrange = Color(0xFFFF8C42);
+
+  final ImagePicker _picker = ImagePicker();
+  File? imageFile;
+  Uint8List? imageBytes;
 
   @override
   void initState() {
     super.initState();
-    namaCtrl = TextEditingController(text: widget.alat?.nama ?? '');
-    stokCtrl = TextEditingController(
+    namaController = TextEditingController(text: widget.alat?.namaAlat ?? '');
+    kondisiController = TextEditingController(
+      text: widget.alat?.kondisi ?? 'baik',
+    );
+    stokTotalController = TextEditingController(
       text: widget.alat?.stokTotal.toString() ?? '',
     );
-    kategoriId = widget.alat?.kategoriId;
-    kondisi = widget.alat?.kondisi ?? 'baik';
-    _existingFotoUrl = widget.alat?.fotoUrl;
+    stokTersediaController = TextEditingController(
+      text: widget.alat?.stokTersedia.toString() ?? '',
+    );
+    isActive = widget.alat?.isActive ?? false;
+    selectedKategoriId = widget.alat?.kategoriId;
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (picked == null) return;
+
+    if (kIsWeb) {
+      imageBytes = await picked.readAsBytes();
+      imageFile = null;
+    } else {
+      imageFile = File(picked.path);
+      imageBytes = null;
+    }
+
+    setState(() => errorFoto = null);
+  }
+
+  bool _validate() {
+    bool valid = true;
+
+    errorNama = null;
+    errorKategori = null;
+    errorStokTotal = null;
+    errorStokTersedia = null;
+    errorFoto = null;
+    errorStatus = null;
+
+    if (namaController.text.trim().isEmpty) {
+      errorNama = 'Nama alat wajib diisi';
+      valid = false;
+    }
+
+    if (selectedKategoriId == null) {
+      errorKategori = 'Kategori wajib dipilih';
+      valid = false;
+    }
+
+    if (stokTotalController.text.isEmpty ||
+        int.tryParse(stokTotalController.text) == null) {
+      errorStokTotal = 'Stok harus berupa angka';
+      valid = false;
+    }
+
+    if (stokTersediaController.text.isEmpty ||
+        int.tryParse(stokTersediaController.text) == null) {
+      errorStokTersedia = 'Stok harus berupa angka';
+      valid = false;
+    }
+
+    /// FOTO WAJIB HANYA SAAT TAMBAH
+    if (widget.alat == null && imageFile == null && imageBytes == null) {
+      errorFoto = 'Foto wajib ditambahkan';
+      valid = false;
+    }
+
+    setState(() {});
+    return valid;
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.alat == null ? 'Tambah Alat' : 'Edit Alat'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Preview gambar real-time
-              if (_existingFotoUrl != null || _fotoBytes != null)
-                Container(
-                  height: 150,
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: _buildImagePreview(),
-                  ),
-                ),
-
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _pilihFoto,
-                icon: const Icon(Icons.camera_alt),
-                label: Text(
-                  _fotoBytes != null || _existingFotoUrl != null
-                      ? 'Ganti Foto'
-                      : 'Upload Foto',
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF8C42),
-                  foregroundColor: Colors.white,
-                ),
+    return Dialog(
+      insetPadding: const EdgeInsets.all(24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.alat == null ? 'Tambah Alat' : 'Edit Alat',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
               ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Silahkan tambahkan alat baru',
+              style: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
 
-              const SizedBox(height: 16),
-
-              DropdownButtonFormField<String>(
-                value: kategoriId,
-                items: widget.kategoriList
-                    .map(
-                      (k) => DropdownMenuItem<String>(
-                        value: k.id,
-                        child: Text(k.nama),
+            /// FOTO
+            Center(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: _pickImage,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(8),
+                        image: (imageBytes != null || imageFile != null)
+                            ? DecorationImage(
+                                image: kIsWeb
+                                    ? MemoryImage(imageBytes!)
+                                    : FileImage(imageFile!) as ImageProvider,
+                                fit: BoxFit.cover,
+                              )
+                            : null,
                       ),
-                    )
-                    .toList(),
-                onChanged: _isLoading
-                    ? null
-                    : (v) => setState(() => kategoriId = v),
-                decoration: const InputDecoration(
-                  labelText: 'Kategori',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) => v == null ? 'Pilih kategori' : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: namaCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Alat',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    v!.trim().isEmpty ? 'Nama alat wajib diisi' : null,
-                enabled: !_isLoading,
-              ),
-
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: stokCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Stok Total',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) {
-                  if (v!.trim().isEmpty) return 'Stok wajib diisi';
-                  final num = int.tryParse(v);
-                  if (num == null) return 'Harus angka';
-                  if (num < 0) return 'Tidak boleh negatif';
-                  return null;
-                },
-                enabled: !_isLoading,
-              ),
-
-              const SizedBox(height: 16),
-
-              DropdownButtonFormField<String>(
-                value: kondisi,
-                items: ['baik', 'rusak']
-                    .map(
-                      (e) => DropdownMenuItem(
-                        value: e,
-                        child: Text(e[0].toUpperCase() + e.substring(1)),
+                      child: (imageBytes == null && imageFile == null)
+                          ? const Icon(Icons.camera_alt, color: Colors.grey)
+                          : null,
+                    ),
+                    if (errorFoto != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          errorFoto!,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.red,
+                          ),
+                        ),
                       ),
-                    )
-                    .toList(),
-                onChanged: _isLoading
-                    ? null
-                    : (v) => setState(() => kondisi = v!),
-                decoration: const InputDecoration(
-                  labelText: 'Kondisi',
-                  border: OutlineInputBorder(),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 24),
+
+            _label('Nama Alat'),
+            _input(namaController, 'Tambahkan nama alat'),
+            if (errorNama != null) _errorText(errorNama!),
+
+            const SizedBox(height: 16),
+
+            _label('Kategori'),
+            DropdownButtonFormField<String>(
+              value: selectedKategoriId,
+              items: widget.kategoriList.map((kategori) {
+                return DropdownMenuItem<String>(
+                  value: kategori.id,
+                  child: Text(
+                    kategori.namaKategori,
+                    style: GoogleFonts.inter(fontSize: 13),
+                  ),
+                );
+              }).toList(),
+              onChanged: (v) => setState(() => selectedKategoriId = v),
+              decoration: _dropdownDecoration(),
+            ),
+            if (errorKategori != null) _errorText(errorKategori!),
+
+            const SizedBox(height: 16),
+
+            _label('Kondisi'),
+            DropdownButtonFormField<String>(
+              value: kondisiController.text,
+              items: const [
+                DropdownMenuItem(value: 'baik', child: Text('Baik')),
+                DropdownMenuItem(value: 'rusak', child: Text('Rusak')),
+              ],
+              onChanged: (v) => setState(() => kondisiController.text = v!),
+              decoration: _dropdownDecoration(),
+            ),
+
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _label('Stok Alat'),
+                      _input(
+                        stokTotalController,
+                        '0',
+                        keyboard: TextInputType.number,
+                      ),
+                      if (errorStokTotal != null) _errorText(errorStokTotal!),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _label('Stok tersedia'),
+                      _input(
+                        stokTersediaController,
+                        '0',
+                        keyboard: TextInputType.number,
+                      ),
+                      if (errorStokTersedia != null)
+                        _errorText(errorStokTersedia!),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            _label('Status Alat'),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text('Non Aktif'),
+                Switch(
+                  value: isActive,
+                  activeColor: Colors.white,
+                  activeTrackColor: primaryOrange,
+                  inactiveThumbColor: Colors.white,
+                  inactiveTrackColor: Colors.grey.shade400,
+                  onChanged: (v) => setState(() => isActive = v),
+                ),
+                const Text('Aktif'),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton(
+                  onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (!_validate()) return;
+
+                          setState(() => isSubmitting = true);
+                          await Future.delayed(
+                            const Duration(milliseconds: 100),
+                          );
+
+                          if (!mounted) return;
+
+                          Navigator.pop(context, {
+                            'nama': namaController.text.trim(),
+                            'kategoriId': selectedKategoriId,
+                            'kondisi': kondisiController.text,
+                            'stokTotal': int.parse(stokTotalController.text),
+                            'stokTersedia': int.parse(
+                              stokTersediaController.text,
+                            ),
+                            'isActive': isActive,
+                            'imageFile': imageFile,
+                            'imageBytes': imageBytes,
+                          });
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Simpan'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text('Batal'),
-        ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _simpan,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFF8C42),
-            foregroundColor: Colors.white,
-          ),
-          child: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-              : const Text('Simpan'),
-        ),
-      ],
     );
   }
 
-  Widget _buildImagePreview() {
-    if (_fotoBytes != null) {
-      return Image.memory(
-        _fotoBytes!,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 48),
-      );
-    }
+  InputDecoration _dropdownDecoration() => InputDecoration(
+    isDense: true,
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide(color: Colors.grey.shade400),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: primaryOrange, width: 1.5),
+    ),
+  );
 
-    if (_existingFotoUrl != null) {
-      return Image.network(
-        _existingFotoUrl!,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const Center(child: CircularProgressIndicator());
-        },
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 48),
-      );
-    }
+  Widget _label(String text) => Text(
+    text,
+    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500),
+  );
 
-    return const Center(
-      child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+  Widget _errorText(String text) => Padding(
+    padding: const EdgeInsets.only(top: 4),
+    child: Text(
+      text,
+      style: GoogleFonts.inter(fontSize: 11, color: Colors.red),
+    ),
+  );
+
+  Widget _input(
+    TextEditingController c,
+    String hint, {
+    TextInputType keyboard = TextInputType.text,
+  }) {
+    return TextField(
+      controller: c,
+      keyboardType: keyboard,
+      style: GoogleFonts.inter(fontSize: 13),
+      cursorColor: primaryOrange,
+      decoration: InputDecoration(
+        hintText: hint,
+        isDense: true,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade400),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: primaryOrange, width: 1.5),
+        ),
+      ),
     );
-  }
-
-  Future<void> _pilihFoto() async {
-    try {
-      final XFile? picked = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (picked != null) {
-        final bytes = await picked.readAsBytes();
-        setState(() {
-          _fotoBytes = bytes;
-          _existingFotoUrl = null; // ganti preview ke yang baru
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memilih foto: $e'),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _simpan() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final data = {
-        'kategori_id': kategoriId,
-        'nama_alat': namaCtrl.text.trim(),
-        'stok_total': int.parse(stokCtrl.text.trim()),
-        'kondisi': kondisi,
-      };
-
-      if (widget.alat == null) {
-        data['stok_tersedia'] = data['stok_total'];
-        await _db.insertAlat(data, fotoFile: _fotoBytes);
-      } else {
-        await _db.updateAlat(widget.alat!.id, data, fotoFile: _fotoBytes);
-      }
-
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.alat == null
-                  ? 'Alat berhasil ditambahkan'
-                  : 'Alat berhasil diupdate',
-            ),
-            backgroundColor: Colors.green.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menyimpan: $e'),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
   }
 
   @override
   void dispose() {
-    namaCtrl.dispose();
-    stokCtrl.dispose();
+    namaController.dispose();
+    kondisiController.dispose();
+    stokTotalController.dispose();
+    stokTersediaController.dispose();
     super.dispose();
   }
 }

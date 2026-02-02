@@ -1,89 +1,105 @@
-import 'dart:io' show File;
-import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import '../models/alat.dart';
 import '../services/database_service.dart';
 
 class AlatController extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
-  List<Alat> alatList = [];
-  bool isLoading = false;
 
-  // ================= LOAD ALAT =================
-  Future<void> loadAlat() async {
+  List<Alat> alatList = [];
+  bool isLoading = true;
+  StreamSubscription<List<Alat>>? _alatSub;
+
+  AlatController() {
+    _startListening();
+  }
+
+  void _startListening() {
+    _alatSub?.cancel();
     isLoading = true;
     notifyListeners();
 
-    try {
-      alatList = await _db.getAlat();
-    } catch (e) {
-      debugPrint('Error loading alat: $e');
-      alatList = [];
-    }
-
-    isLoading = false;
-    notifyListeners();
+    _alatSub = _db.streamAlat().listen((data) {
+      alatList = data;
+      isLoading = false;
+      notifyListeners();
+    }, onError: (e) {
+      debugPrint('Stream alat error: $e');
+      isLoading = false;
+      notifyListeners();
+    });
   }
 
-  // ================= TAMBAH ALAT =================
   Future<void> tambahAlat({
     required String kategoriId,
     required String namaAlat,
     required int stokTotal,
     required String kondisi,
-    dynamic fotoFile, // bisa File (mobile) atau Uint8List (web)
+    dynamic fotoFile,
   }) async {
     try {
-      final data = {
-        'kategori_id': kategoriId,
-        'nama_alat': namaAlat,
-        'stok_total': stokTotal,
-        'stok_tersedia': stokTotal,
-        'kondisi': kondisi,
-      };
+      final alat = Alat(
+        id: '',
+        kategoriId: kategoriId,
+        namaAlat: namaAlat,
+        stokTotal: stokTotal,
+        stokTersedia: stokTotal,
+        kondisi: kondisi,
+        isActive: true,
+      );
+      await _db.insertAlat(alat.toInsertMap(), fotoFile: fotoFile);
 
-      await _db.insertAlat(data, fotoFile: fotoFile);
-      await loadAlat();
+      // 🔹 Tidak perlu loadAlat() lagi
     } catch (e) {
-      debugPrint('Error menambah alat: $e');
+      debugPrint('Error tambah alat: $e');
       rethrow;
     }
   }
 
-  // ================= UPDATE ALAT =================
   Future<void> updateAlat({
     required String id,
     required String kategoriId,
     required String namaAlat,
     required int stokTotal,
+    required int stokTersedia,
     required String kondisi,
-    dynamic fotoFile, // bisa File (mobile) atau Uint8List (web)
+    bool isActive = true,
+    dynamic fotoFile,
   }) async {
     try {
-      final data = {
-        'kategori_id': kategoriId,
-        'nama_alat': namaAlat,
-        'stok_total': stokTotal,
-        'kondisi': kondisi,
-        // stok_tersedia tidak diubah saat update (sesuai logika umum)
-      };
+      final alat = Alat(
+        id: id,
+        kategoriId: kategoriId,
+        namaAlat: namaAlat,
+        stokTotal: stokTotal,
+        stokTersedia: stokTersedia,
+        kondisi: kondisi,
+        isActive: isActive,
+      );
 
-      await _db.updateAlat(id, data, fotoFile: fotoFile);
-      await loadAlat();
+      await _db.updateAlat(id, alat.toUpdateMap(), fotoFile: fotoFile);
+
+      // 🔹 Stream akan otomatis update → UI rebuild
     } catch (e) {
-      debugPrint('Error mengupdate alat: $e');
+      debugPrint('Error update alat: $e');
       rethrow;
     }
   }
 
-  // ================= DELETE ALAT =================
   Future<void> deleteAlat(String id) async {
     try {
       await _db.deleteAlat(id);
-      await loadAlat();
+      // 🔹 Stream otomatis akan update
     } catch (e) {
-      debugPrint('Error menghapus alat: $e');
+      debugPrint('Error delete alat: $e');
       rethrow;
     }
+  }
+
+  @override
+  void dispose() {
+    _alatSub?.cancel();
+    super.dispose();
   }
 }

@@ -42,37 +42,37 @@ class DummyData {
   //   ),
   // ];
 
-  // ==================== KATEGORI ====================
-  static final List<Kategori> kategoriList = [
-    Kategori(id: '1', nama: 'Alat Ukur', isActive: true),
-    Kategori(id: '2', nama: 'Alat Solder', isActive: true),
-    Kategori(id: '3', nama: 'Alat Potong', isActive: false),
-    Kategori(id: '4', nama: 'Alat Kerja Listrik', isActive: false),
-  ];
+  // // ==================== KATEGORI ====================
+  // static final List<Kategori> kategoriList = [
+  //   Kategori(id: '1', nama: 'Alat Ukur', isActive: true),
+  //   Kategori(id: '2', nama: 'Alat Solder', isActive: true),
+  //   Kategori(id: '3', nama: 'Alat Potong', isActive: false),
+  //   Kategori(id: '4', nama: 'Alat Kerja Listrik', isActive: false),
+  // ];
 
-  // ==================== ALAT ====================
-  static final List<Alat> alatList = [
-    Alat(
-      id: '1',
-      kategoriId: '1',
-      nama: 'Tang Tangan',
-      stokTotal: 34,
-      stokTersedia: 24,
-      kondisi: 'baik',
-      isActive: true,
-      fotoUrl: 'assets/images/tang.png',
-    ),
-    Alat(
-      id: '2',
-      kategoriId: '1',
-      nama: 'Meteran Digital',
-      stokTotal: 20,
-      stokTersedia: 15,
-      kondisi: 'baik',
-      isActive: false,
-      fotoUrl: 'Assets/images/tang tangan.jpg',
-    ),
-  ];
+  // // ==================== ALAT ====================
+  // static final List<Alat> alatList = [
+  //   Alat(
+  //     id: '1',
+  //     kategoriId: '1',
+  //     nama: 'Tang Tangan',
+  //     stokTotal: 34,
+  //     stokTersedia: 24,
+  //     kondisi: 'baik',
+  //     isActive: true,
+  //     fotoUrl: 'assets/images/tang.png',
+  //   ),
+  //   Alat(
+  //     id: '2',
+  //     kategoriId: '1',
+  //     nama: 'Meteran Digital',
+  //     stokTotal: 20,
+  //     stokTersedia: 15,
+  //     kondisi: 'baik',
+  //     isActive: false,
+  //     fotoUrl: 'Assets/images/tang tangan.jpg',
+  //   ),
+  // ];
 
   /// ==================== LOG AKTIVITAS ====================
   static final List<LogAktivitas> logList = [

@@ -81,6 +81,7 @@ class UserController {
       if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(username)) {
         throw Exception('Username hanya boleh huruf, angka, underscore');
       }
+      
     }
 
     if (!isUpdate) {

@@ -43,23 +43,6 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
             ),
           ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16, top: 12),
-              child: Column(
-                children: const [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, color: Color(0xFFFB923C)),
-                  ),
-                  SizedBox(height: 4),
-                  Text('Peminjam',
-                      style: TextStyle(fontSize: 12, color: Colors.white)),
-                ],
-              ),
-            )
-          ],
         ),
       ),
 
