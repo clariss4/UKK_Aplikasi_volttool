@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../models/kategori.dart';
+import '../../models/kategori.dart';
 
 class KategoriFormDialog extends StatefulWidget {
   final Kategori? kategori;
@@ -15,34 +15,96 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
   late TextEditingController namaController;
   late bool isActive;
 
-  String? errorNama; // ✅ VALIDASI ERROR
+  String? errorNama;
+  bool isSubmitting = false;
 
   static const Color primaryOrange = Color(0xFFFF8C42);
 
   @override
   void initState() {
     super.initState();
-    
+
     namaController = TextEditingController(
       text: widget.kategori?.namaKategori ?? '',
     );
-    isActive = widget.kategori?.isActive ?? false;
+
+    isActive = widget.kategori?.isActive ?? true;
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     setState(() {
       errorNama = null;
+      isSubmitting = true;
 
       if (namaController.text.trim().isEmpty) {
         errorNama = 'Nama kategori wajib diisi';
+        isSubmitting = false;
       }
     });
 
     if (errorNama != null) return;
 
+    /// KONFIRMASI JIKA NONAKTIF
+    if (widget.kategori != null &&
+        widget.kategori!.isActive == true &&
+        isActive == false) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Text(
+            'Nonaktifkan Kategori?',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 18),
+          ),
+          content: Text(
+            'Semua alat dalam kategori "${widget.kategori!.namaKategori}" '
+            'juga akan dinonaktifkan. Lanjutkan?',
+            style: GoogleFonts.inter(fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Batal',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryOrange,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Ya, Nonaktifkan',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) {
+        setState(() => isSubmitting = false);
+        return;
+      }
+    }
+
+    /// ⬇⬇⬇ INI INTI PERBAIKANNYA ⬇⬇⬇
     Navigator.pop(context, {
-      'nama': namaController.text.trim(),
-      'isActive': isActive,
+      'nama_kategori': namaController.text.trim(),
+      'is_active': isActive,
     });
   }
 
@@ -67,7 +129,9 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Silahkan tambahkan kategori baru',
+              widget.kategori == null
+                  ? 'Silahkan tambahkan kategori baru'
+                  : 'Edit informasi kategori',
               style: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
             ),
 
@@ -91,7 +155,6 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
                 hintStyle: GoogleFonts.inter(fontSize: 12),
                 isDense: true,
                 errorText: errorNama,
-
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: Colors.grey.shade400),
@@ -103,8 +166,6 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
                     width: 1.5,
                   ),
                 ),
-
-                // ✅ AGAR ERROR TETAP KOTAK (BUKAN GARIS)
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: Colors.red, width: 1.2),
@@ -117,7 +178,7 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Kategori akan di tampilkan di filter kategori',
+              'Kategori akan ditampilkan di filter kategori',
               style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
             ),
 
@@ -155,9 +216,8 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                /// BATAL
                 OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: isSubmitting ? null : () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(5),
@@ -173,11 +233,9 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
                     style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                   ),
                 ),
-
                 const SizedBox(width: 12),
-
-                /// SIMPAN
                 ElevatedButton(
+                  onPressed: isSubmitting ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryOrange,
                     elevation: 0,
@@ -189,14 +247,24 @@ class _KategoriFormDialogState extends State<KategoriFormDialog> {
                       vertical: 12,
                     ),
                   ),
-                  onPressed: _submit,
-                  child: Text(
-                    'Simpan',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'Simpan',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ],
             ),

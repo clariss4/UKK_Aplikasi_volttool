@@ -1,11 +1,13 @@
 import 'dart:async';
+import 'package:apk_peminjaman/Widgets/manajemen_alat/alat_form_dialog.dart';
+import 'package:apk_peminjaman/Widgets/manajemen_alat/kateogri_form_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:apk_peminjaman/Widgets/alat_form_dialog.dart';
-import 'package:apk_peminjaman/Widgets/kateogri_form_dialog.dart';
+import 'package:apk_peminjaman/Widgets/manajemen_alat/search_bar_section.dart';
+import 'package:apk_peminjaman/Widgets/manajemen_alat/kategori_section.dart';
+import 'package:apk_peminjaman/Widgets/manajemen_alat/alat_section.dart';
 import 'package:apk_peminjaman/Widgets/main_drawer.dart';
-import 'package:apk_peminjaman/Widgets/alat_card.dart';
 import 'package:apk_peminjaman/models/alat.dart';
 import 'package:apk_peminjaman/models/kategori.dart';
 import 'package:apk_peminjaman/services/database_service.dart';
@@ -19,7 +21,6 @@ class ManajemenAlatPage extends StatefulWidget {
 
 class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
   final DatabaseService _db = DatabaseService();
-
   final searchController = TextEditingController();
 
   List<Alat> alatListFull = [];
@@ -34,20 +35,27 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
   @override
   void initState() {
     super.initState();
+    _initStreams();
+  }
 
-    // 🔹 STREAM ALAT
-    alatSub = _db.streamAlat().listen((data) {
-      setState(() {
-        alatListFull = data;
-        isLoading = false;
-      });
+  void _initStreams() {
+    // Stream Alat
+    alatSub = _db.streamAlatAll().listen((data) {
+      if (mounted) {
+        setState(() {
+          alatListFull = data;
+          isLoading = false;
+        });
+      }
     });
 
-    // 🔹 STREAM KATEGORI
-    kategoriSub = _db.streamKategori().listen((data) {
-      setState(() {
-        kategoriList = data;
-      });
+    // Stream Kategori
+    kategoriSub = _db.streamKategoriAll().listen((data) {
+      if (mounted) {
+        setState(() {
+          kategoriList = data;
+        });
+      }
     });
   }
 
@@ -59,16 +67,17 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // ================= FILTER KATEGORI =================
+  // ================= FILTER DATA =================
+  List<Alat> _getFilteredAlatList() {
     List<Alat> alatList = List.from(alatListFull);
+
+    // Filter by kategori
     if (selectedFilterIndex > 0 && kategoriList.isNotEmpty) {
       final kategoriId = kategoriList[selectedFilterIndex - 1].id;
       alatList = alatList.where((a) => a.kategoriId == kategoriId).toList();
     }
 
-    // ================= FILTER SEARCH =================
+    // Filter by search
     final keyword = searchController.text.trim().toLowerCase();
     if (keyword.isNotEmpty) {
       alatList = alatList
@@ -76,65 +85,48 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
           .toList();
     }
 
+    return alatList;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final alatList = _getFilteredAlatList();
+
     return Scaffold(
       drawer: AppDrawer(currentPage: 'Manajemen Alat'),
       appBar: _buildAppBar(),
       body: Column(
         children: [
-          _buildSearchBar(),
-          _buildFilterChips(),
-          _buildKategoriHeader(),
+          SearchBarSection(
+            searchController: searchController,
+            onSearchChanged: () => setState(() {}),
+            onTambahAlat: _showTambahAlatDialog,
+          ),
+          KategoriSection(
+            kategoriList: kategoriList,
+            selectedFilterIndex: selectedFilterIndex,
+            onFilterSelected: (index) => setState(() {
+              selectedFilterIndex = index;
+            }),
+            onTambahKategori: _showTambahKategoriDialog,
+            onEditKategori: selectedFilterIndex > 0
+                ? () => _showEditKategoriDialog(
+                    kategoriList[selectedFilterIndex - 1],
+                  )
+                : null,
+          ),
           Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : alatList.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Alat tidak ditemukan',
-                          style: GoogleFonts.inter(color: Colors.grey),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: alatList.length,
-                        itemBuilder: (context, index) {
-                          return AlatCard(
-                            alat: alatList[index],
-                            onEdit: () async {
-                              final result =
-                                  await showDialog<Map<String, dynamic>>(
-                                context: context,
-                                builder: (_) => AlatFormDialog(
-                                  alat: alatList[index],
-                                  kategoriList: kategoriList,
-                                ),
-                              );
-
-                              if (result != null) {
-                                await _db.updateAlat(
-                                  alatList[index].id,
-                                  {
-                                    'kategori_id': result['kategoriId'],
-                                    'nama_alat': result['namaAlat'],
-                                    'stok_total': result['stokTotal'],
-                                    'stok_tersedia': result['stokTersedia'],
-                                    'kondisi': result['kondisi'],
-                                    'is_active': true,
-                                  },
-                                  fotoFile: result['fotoFile'],
-                                );
-                              }
-                            },
-                          );
-                        },
-                      ),
+            child: AlatSection(
+              isLoading: isLoading,
+              alatList: alatList,
+              onEditAlat: _showEditAlatDialog,
+            ),
           ),
         ],
       ),
     );
   }
 
-  // ================= APP BAR =================
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: const Color(0xFFFF8C42),
@@ -146,221 +138,186 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Manajemen',
-                style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600)),
-            Text('Alat & Kategori',
-                style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              'Manajemen',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              'Alat & Kategori',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  // ================= SEARCH BAR =================
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: searchController,
-              onChanged: (_) => setState(() {}),
-              style: GoogleFonts.inter(),
-              decoration: InputDecoration(
-                hintText: 'Cari alat...',
-                hintStyle: GoogleFonts.inter(color: Colors.grey),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 14),
-                suffixIcon: const Icon(Icons.search, color: Colors.grey),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: Colors.grey, width: 1.5),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: Colors.grey, width: 1.5),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: Colors.grey, width: 1.8),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final result = await showDialog<Map<String, dynamic>>(
-                context: context,
-                builder: (_) => AlatFormDialog(kategoriList: kategoriList),
-              );
-
-              if (result != null) {
-                await _db.insertAlat(
-                  {
-                    'kategori_id': result['kategoriId'],
-                    'nama_alat': result['namaAlat'],
-                    'stok_total': result['stokTotal'],
-                    'kondisi': result['kondisi'],
-                    'is_active': true,
-                  },
-                  fotoFile: result['fotoFile'],
-                );
-              }
-            },
-            icon: const Icon(Icons.add, size: 18, color: Colors.white),
-            label: Text(
-              'Alat',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF8C42),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5),
-              ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            ),
-          ),
-        ],
-      ),
+  // ================= DIALOG HANDLERS - ALAT =================
+  Future<void> _showTambahAlatDialog() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => AlatFormDialog(kategoriList: kategoriList),
     );
-  }
 
-  // ================= FILTER CHIP =================
-  Widget _buildFilterChips() {
-    return SizedBox(
-      height: 52,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: kategoriList.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                avatar: const Icon(Icons.add, size: 16, color: Colors.white),
-                label: Text(
-                  'Tambah Kategori',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                backgroundColor: const Color(0xFFFF8C42),
-                showCheckmark: false,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(5),
-                  side:
-                      const BorderSide(color: Color(0xFFFF8C42), width: 1),
-                ),
-                onSelected: (_) async {
-                  final result = await showDialog<Map<String, dynamic>>(
-                    context: context,
-                    builder: (_) => const KategoriFormDialog(),
-                  );
+    if (result == null || !mounted) return;
 
-                  if (result != null) {
-                    await _db.insertKategori({
-                      'nama_kategori': result['nama'],
-                      'is_active': true,
-                    });
-                  }
-                },
-              ),
-            );
-          }
+    _showLoadingSnackBar('Menyimpan alat...');
 
-          final kategori = kategoriList[index - 1];
-          final isSelected = selectedFilterIndex == index;
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(
-                kategori.namaKategori,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w500,
-                  color: isSelected ? const Color(0xFFFF8C42) : Colors.white,
-                ),
-              ),
-              selected: isSelected,
-              showCheckmark: false,
-              backgroundColor: const Color(0xFFFF8C42),
-              selectedColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5),
-                side: BorderSide(
-                  color: const Color(0xFFFF8C42),
-                  width: isSelected ? 1.5 : 0,
-                ),
-              ),
-              onSelected: (_) {
-                setState(() {
-                  selectedFilterIndex = index;
-                });
-              },
-            ),
-          );
+    try {
+      await _db.insertAlat(
+        {
+          'kategori_id': result['kategoriId'],
+          'nama_alat': result['namaAlat'],
+          'stok_total': result['stokTotal'],
+          'kondisi': result['kondisi'],
+          'is_active': true,
         },
+        fotoFile:
+            result['fotoFile'] ?? result['imageFile'] ?? result['imageBytes'],
+      );
+
+      _showSuccessSnackBar('Alat berhasil ditambahkan');
+    } catch (e) {
+      _showErrorSnackBar('Gagal: ${e.toString()}');
+    }
+  }
+
+  Future<void> _showEditAlatDialog(Alat alat) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => AlatFormDialog(alat: alat, kategoriList: kategoriList),
+    );
+
+    if (result == null || !mounted) return;
+
+    _showLoadingSnackBar('Memperbarui alat...');
+
+    try {
+      await _db.updateAlat(
+        alat.id,
+        {
+          'kategori_id': result['kategoriId'],
+          'nama_alat': result['namaAlat'],
+          'stok_total': result['stokTotal'],
+          'stok_tersedia': result['stokTersedia'],
+          'kondisi': result['kondisi'],
+          'is_active': result['isActive'] ?? true,
+        },
+        fotoFile:
+            result['fotoFile'] ?? result['imageFile'] ?? result['imageBytes'],
+      );
+
+      _showSuccessSnackBar('Alat berhasil diperbarui');
+    } catch (e) {
+      _showErrorSnackBar('Gagal: ${e.toString()}');
+    }
+  }
+
+  // ================= DIALOG HANDLERS - KATEGORI =================
+  Future<void> _showTambahKategoriDialog() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => const KategoriFormDialog(),
+    );
+
+    if (result == null || !mounted) return;
+
+    _showLoadingSnackBar('Menyimpan kategori...');
+
+    try {
+      await _db.insertKategori({
+        'nama_kategori': result['nama'],
+        'is_active': result['isActive'] ?? true,
+      });
+
+      _showSuccessSnackBar('Kategori berhasil ditambahkan');
+    } catch (e) {
+      _showErrorSnackBar('Gagal tambah kategori: ${e.toString()}');
+    }
+  }
+
+  Future<void> _showEditKategoriDialog(Kategori kategori) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => KategoriFormDialog(kategori: kategori),
+    );
+
+    if (result == null || !mounted) return;
+
+    _showLoadingSnackBar('Memperbarui kategori...');
+
+    try {
+      await _db.updateKategori(kategori.id, {
+        'nama_kategori': result['nama'],
+        'is_active': result['isActive'] ?? true,
+      });
+
+      /// ⬇️ RESET FILTER JIKA KATEGORI DIMATIKAN
+      if (result['isActive'] == false) {
+        setState(() {
+          selectedFilterIndex = 0;
+        });
+      }
+
+      _showSuccessSnackBar('Kategori berhasil diperbarui');
+    } catch (e) {
+      _showErrorSnackBar('Gagal update kategori: ${e.toString()}');
+    }
+  }
+
+  // ================= SNACKBAR HELPERS =================
+  void _showLoadingSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(message),
+          ],
+        ),
+        duration: const Duration(seconds: 30),
+        backgroundColor: Colors.orange,
       ),
     );
   }
 
-  // ================= HEADER =================
-  Widget _buildKategoriHeader() {
-    final kategori = selectedFilterIndex > 0 && kategoriList.isNotEmpty
-        ? kategoriList[selectedFilterIndex - 1]
-        : null;
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              kategori?.namaKategori ?? 'Semua Alat',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          if (kategori != null)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              color: const Color(0xFFFF8C42),
-              onPressed: () async {
-                final result = await showDialog<Map<String, dynamic>>(
-                  context: context,
-                  builder: (_) => KategoriFormDialog(kategori: kategori),
-                );
-
-                if (result != null) {
-                  await _db.updateKategori(kategori.id, {
-                    'nama_kategori': result['nama'],
-                    'is_active': true,
-                  });
-                }
-              },
-            ),
-        ],
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 5),
       ),
     );
   }

@@ -30,6 +30,6 @@ class Kategori {
 
   /* ================= MAP UNTUK UPDATE ================= */
   Map<String, dynamic> toUpdateMap() {
-    return {'nama_kategori': namaKategori};
+    return {'nama_kategori': namaKategori, 'is_active': isActive};
   }
 }

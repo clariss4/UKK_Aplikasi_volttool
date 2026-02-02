@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../models/alat.dart';
-import '../models/kategori.dart';
+import '../../models/alat.dart';
+import '../../models/kategori.dart';
 
 class AlatFormDialog extends StatefulWidget {
   final Alat? alat;
@@ -41,6 +41,7 @@ class _AlatFormDialogState extends State<AlatFormDialog> {
   final ImagePicker _picker = ImagePicker();
   File? imageFile;
   Uint8List? imageBytes;
+  String? existingFotoUrl; // ✅ Menyimpan foto URL yang sudah ada
 
   @override
   void initState() {
@@ -55,8 +56,9 @@ class _AlatFormDialogState extends State<AlatFormDialog> {
     stokTersediaController = TextEditingController(
       text: widget.alat?.stokTersedia.toString() ?? '',
     );
-    isActive = widget.alat?.isActive ?? false;
+    isActive = widget.alat?.isActive ?? true; // ✅ Default true untuk edit
     selectedKategoriId = widget.alat?.kategoriId;
+    existingFotoUrl = widget.alat?.fotoUrl; // ✅ Simpan foto URL yang sudah ada
   }
 
   Future<void> _pickImage() async {
@@ -75,7 +77,10 @@ class _AlatFormDialogState extends State<AlatFormDialog> {
       imageBytes = null;
     }
 
-    setState(() => errorFoto = null);
+    setState(() {
+      errorFoto = null;
+      existingFotoUrl = null; // ✅ Clear existing foto jika pilih foto baru
+    });
   }
 
   bool _validate() {
@@ -110,7 +115,7 @@ class _AlatFormDialogState extends State<AlatFormDialog> {
       valid = false;
     }
 
-    /// FOTO WAJIB HANYA SAAT TAMBAH
+    /// ✅ FOTO WAJIB HANYA SAAT TAMBAH
     if (widget.alat == null && imageFile == null && imageBytes == null) {
       errorFoto = 'Foto wajib ditambahkan';
       valid = false;
@@ -139,12 +144,14 @@ class _AlatFormDialogState extends State<AlatFormDialog> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Silahkan tambahkan alat baru',
+              widget.alat == null
+                  ? 'Silahkan tambahkan alat baru'
+                  : 'Edit informasi alat',
               style: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 24),
 
-            /// FOTO
+            /// FOTO - ✅ Tampilkan existing foto saat edit
             Center(
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
@@ -157,18 +164,9 @@ class _AlatFormDialogState extends State<AlatFormDialog> {
                       decoration: BoxDecoration(
                         color: Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(8),
-                        image: (imageBytes != null || imageFile != null)
-                            ? DecorationImage(
-                                image: kIsWeb
-                                    ? MemoryImage(imageBytes!)
-                                    : FileImage(imageFile!) as ImageProvider,
-                                fit: BoxFit.cover,
-                              )
-                            : null,
+                        image: _getImageDecoration(),
                       ),
-                      child: (imageBytes == null && imageFile == null)
-                          ? const Icon(Icons.camera_alt, color: Colors.grey)
-                          : null,
+                      child: _getImageChild(),
                     ),
                     if (errorFoto != null)
                       Padding(
@@ -304,7 +302,7 @@ class _AlatFormDialogState extends State<AlatFormDialog> {
                           if (!mounted) return;
 
                           Navigator.pop(context, {
-                            'nama': namaController.text.trim(),
+                            'namaAlat': namaController.text.trim(),
                             'kategoriId': selectedKategoriId,
                             'kondisi': kondisiController.text,
                             'stokTotal': int.parse(stokTotalController.text),
@@ -314,6 +312,7 @@ class _AlatFormDialogState extends State<AlatFormDialog> {
                             'isActive': isActive,
                             'imageFile': imageFile,
                             'imageBytes': imageBytes,
+                            'fotoFile': imageFile ?? imageBytes,
                           });
                         },
                   child: isSubmitting
@@ -330,6 +329,33 @@ class _AlatFormDialogState extends State<AlatFormDialog> {
         ),
       ),
     );
+  }
+
+  /// ✅ Helper untuk mendapatkan DecorationImage
+  DecorationImage? _getImageDecoration() {
+    // Prioritas: foto baru > foto existing
+    if (imageBytes != null) {
+      return DecorationImage(
+        image: MemoryImage(imageBytes!),
+        fit: BoxFit.cover,
+      );
+    } else if (imageFile != null) {
+      return DecorationImage(image: FileImage(imageFile!), fit: BoxFit.cover);
+    } else if (existingFotoUrl != null && existingFotoUrl!.isNotEmpty) {
+      return DecorationImage(
+        image: NetworkImage(existingFotoUrl!),
+        fit: BoxFit.cover,
+      );
+    }
+    return null;
+  }
+
+  /// ✅ Helper untuk mendapatkan child widget (icon camera jika tidak ada foto)
+  Widget? _getImageChild() {
+    if (imageBytes == null && imageFile == null && existingFotoUrl == null) {
+      return const Icon(Icons.camera_alt, color: Colors.grey);
+    }
+    return null;
   }
 
   InputDecoration _dropdownDecoration() => InputDecoration(
