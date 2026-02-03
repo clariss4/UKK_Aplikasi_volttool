@@ -19,7 +19,7 @@ class KategoriController extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    _kategoriSub = _db.streamKategori().listen((data) {
+    _kategoriSub = _db.streamKategoriAll().listen((data) {
       kategoriList = data;
       isLoading = false;
       notifyListeners();

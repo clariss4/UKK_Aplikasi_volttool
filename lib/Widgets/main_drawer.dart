@@ -95,6 +95,13 @@ class AppDrawer extends StatelessWidget {
             pageName: 'Laporan',
             targetPage: ReportPage(),
           ),
+           _buildDrawerItem(
+            context,
+            icon: Icons.dashboard,
+            label: 'Dashboard',
+            pageName: 'Dashboard',
+            targetPage: const DashboardScreen(),
+          ),
           _buildDrawerItem(
             context,
             icon: Icons.inventory,
