@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../widgets/main_drawer.dart';
 
-
 class DashboardPetugasScreen extends StatelessWidget {
   const DashboardPetugasScreen({super.key});
 
@@ -49,6 +48,8 @@ class DashboardPetugasScreen extends StatelessWidget {
                     label: 'Sedang dipinjam',
                     icon: Icons.access_time,
                     backgroundColor: Color(0xFFFFC78E),
+                    valueColor: const Color(0xFFfaf8f7), // coklat
+                    labelColor: const Color(0xFFfaf8f7),
                   ),
                 ),
                 SizedBox(width: 12),
@@ -58,6 +59,8 @@ class DashboardPetugasScreen extends StatelessWidget {
                     label: 'Dikembalikan',
                     icon: Icons.assignment_turned_in,
                     backgroundColor: Color(0xFFFFF1E6),
+                    valueColor: const Color(0xFFfa913c), // coklat
+                    labelColor: const Color(0xFFfa913c),
                   ),
                 ),
               ],

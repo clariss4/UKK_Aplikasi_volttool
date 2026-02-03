@@ -18,27 +18,17 @@ class BorrowingCard extends StatelessWidget {
         children: [
           const Text(
             'Clarissa Aurelia QP',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          const Divider(
-            height: 1,
-            thickness: 1,
-            color: Color(0xFFE5E7EB),
-          ),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
           const SizedBox(height: 10),
           const Text(
             '30 Jan 2026 - 01 Feb 2026',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Total Alat: 2',
-            style: TextStyle(fontSize: 12),
-          ),
+          const Text('Total Alat: 2', style: TextStyle(fontSize: 12)),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -69,10 +59,16 @@ class BorrowingCard extends StatelessWidget {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.visibility, size: 16),
+
+                  icon: const Icon(
+                    Icons.visibility,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+
                   label: const Text(
                     'Lihat Detail',
-                    style: TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: 12, color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFFB26B),

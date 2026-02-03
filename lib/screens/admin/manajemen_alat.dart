@@ -1,12 +1,12 @@
 import 'dart:async';
-import 'package:apk_peminjaman/Widgets/manajemen_alat/alat_form_dialog.dart';
-import 'package:apk_peminjaman/Widgets/manajemen_alat/kateogri_form_dialog.dart';
+import 'package:apk_peminjaman/Widgets/Admin/manajemen_alat/alat_form_dialog.dart';
+import 'package:apk_peminjaman/Widgets/Admin/manajemen_alat/kategori_form_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:apk_peminjaman/Widgets/manajemen_alat/search_bar_section.dart';
-import 'package:apk_peminjaman/Widgets/manajemen_alat/kategori_section.dart';
-import 'package:apk_peminjaman/Widgets/manajemen_alat/alat_section.dart';
+import 'package:apk_peminjaman/Widgets/Admin/manajemen_alat/search_bar_section.dart';
+import 'package:apk_peminjaman/Widgets/Admin/manajemen_alat/kategori_section.dart';
+import 'package:apk_peminjaman/Widgets/Admin/manajemen_alat/alat_section.dart';
 import 'package:apk_peminjaman/Widgets/main_drawer.dart';
 import 'package:apk_peminjaman/models/alat.dart';
 import 'package:apk_peminjaman/models/kategori.dart';
@@ -180,13 +180,12 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
           'kondisi': result['kondisi'],
           'is_active': true,
         },
-        fotoFile:
-            result['fotoFile'] ?? result['imageFile'] ?? result['imageBytes'],
+        fotoFile: result['fotoFile'],
       );
 
       _showSuccessSnackBar('Alat berhasil ditambahkan');
     } catch (e) {
-      _showErrorSnackBar('Gagal: ${e.toString()}');
+      _showErrorSnackBar('Gagal menambahkan alat: ${e.toString()}');
     }
   }
 
@@ -211,13 +210,12 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
           'kondisi': result['kondisi'],
           'is_active': result['isActive'] ?? true,
         },
-        fotoFile:
-            result['fotoFile'] ?? result['imageFile'] ?? result['imageBytes'],
+        fotoFile: result['fotoFile'],
       );
 
       _showSuccessSnackBar('Alat berhasil diperbarui');
     } catch (e) {
-      _showErrorSnackBar('Gagal: ${e.toString()}');
+      _showErrorSnackBar('Gagal memperbarui alat: ${e.toString()}');
     }
   }
 
@@ -234,13 +232,13 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
 
     try {
       await _db.insertKategori({
-        'nama_kategori': result['nama'],
-        'is_active': result['isActive'] ?? true,
+        'nama_kategori': result['nama_kategori'],
+        'is_active': result['is_active'] ?? true,
       });
 
       _showSuccessSnackBar('Kategori berhasil ditambahkan');
     } catch (e) {
-      _showErrorSnackBar('Gagal tambah kategori: ${e.toString()}');
+      _showErrorSnackBar('Gagal menambahkan kategori: ${e.toString()}');
     }
   }
 
@@ -256,12 +254,12 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
 
     try {
       await _db.updateKategori(kategori.id, {
-        'nama_kategori': result['nama'],
-        'is_active': result['isActive'] ?? true,
+        'nama_kategori': result['nama_kategori'],
+        'is_active': result['is_active'] ?? true,
       });
 
-      /// ⬇️ RESET FILTER JIKA KATEGORI DIMATIKAN
-      if (result['isActive'] == false) {
+      // Reset filter jika kategori dimatikan
+      if (result['is_active'] == false) {
         setState(() {
           selectedFilterIndex = 0;
         });
@@ -269,7 +267,7 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
 
       _showSuccessSnackBar('Kategori berhasil diperbarui');
     } catch (e) {
-      _showErrorSnackBar('Gagal update kategori: ${e.toString()}');
+      _showErrorSnackBar('Gagal memperbarui kategori: ${e.toString()}');
     }
   }
 

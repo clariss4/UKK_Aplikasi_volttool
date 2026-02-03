@@ -78,10 +78,11 @@ class UserController {
       if (username.trim().length < 4) {
         throw Exception('Username minimal 4 karakter');
       }
-      if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(username)) {
-        throw Exception('Username hanya boleh huruf, angka, underscore');
+      final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@volttool\.com$');
+
+      if (!emailRegex.hasMatch(username.trim())) {
+        throw Exception('Username harus menggunakan @volttool.com');
       }
-      
     }
 
     if (!isUpdate) {

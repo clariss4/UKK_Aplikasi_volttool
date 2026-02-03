@@ -1,7 +1,7 @@
+
 import 'package:apk_peminjaman/models/dashboard_peminjam.dart';
 import 'package:apk_peminjaman/widgets/main_drawer.dart';
 import 'package:flutter/material.dart';
-
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -38,7 +38,7 @@ class DashboardPage extends StatelessWidget {
     ];
 
     return Scaffold(
-      drawer: AppDrawer(currentPage: 'Dashboard'),
+      drawer: AppDrawer(currentPage: 'Dashboard Peminjam'),
       backgroundColor: backgroundColor,
       body: Column(
         children: [
@@ -74,7 +74,7 @@ class DashboardPage extends StatelessWidget {
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
-          )
+          ),
         ],
       ),
     );
@@ -120,10 +120,7 @@ class DashboardPage extends StatelessWidget {
         children: [
           Text(
             data.name,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const Divider(),
 
@@ -159,13 +156,10 @@ class DashboardPage extends StatelessWidget {
               children: const [
                 Icon(Icons.warning, color: Colors.red, size: 16),
                 SizedBox(width: 6),
-                Text(
-                  'Terlambat 1 hari',
-                  style: TextStyle(color: Colors.red),
-                )
+                Text('Terlambat 1 hari', style: TextStyle(color: Colors.red)),
               ],
-            )
-          ]
+            ),
+          ],
         ],
       ),
     );

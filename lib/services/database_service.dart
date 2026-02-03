@@ -53,7 +53,7 @@ class DatabaseService {
     await _client.from('users').update({'is_active': false}).eq('id', id);
   }
 
-  /* ================= STREAM ================= */
+  /* ================= STREAM KATEGORI & ALAT ================= */
 
   // ✅ Stream untuk kategori yang aktif saja (untuk dropdown, dll)
   Stream<List<Kategori>> streamKategori() {
@@ -66,14 +66,13 @@ class DatabaseService {
   }
 
   // ✅ Stream untuk SEMUA kategori (termasuk yang is_active = false)
- Stream<List<Kategori>> streamKategoriAll() {
-  return _client
-      .from('kategori')
-      .stream(primaryKey: ['id'])
-      .order('created_at')
-      .map((data) => data.map(Kategori.fromJson).toList());
-}
-
+  Stream<List<Kategori>> streamKategoriAll() {
+    return _client
+        .from('kategori_alat')
+        .stream(primaryKey: ['id'])
+        .order('created_at')
+        .map((data) => data.map(Kategori.fromJson).toList());
+  }
 
   // ✅ Stream untuk alat yang aktif saja
   Stream<List<Alat>> streamAlat() {
@@ -124,9 +123,11 @@ class DatabaseService {
     }
   }
 
-  /* ================= INSERT ================= */
+  /* ================= INSERT KATEGORI ================= */
   Future<void> insertKategori(Map<String, dynamic> data) async {
     try {
+      debugPrint('🔵 insertKategori dipanggil dengan data: $data');
+
       final response = await _client.from('kategori_alat').insert({
         'nama_kategori': data['nama_kategori'],
         'is_active': data['is_active'] ?? true,
@@ -135,148 +136,247 @@ class DatabaseService {
       debugPrint('✅ Insert kategori berhasil: $response');
     } catch (e) {
       debugPrint('❌ Error insertKategori: $e');
-      debugPrint('❌ Error details: ${e.toString()}');
       rethrow;
     }
   }
 
+  /* ================= INSERT ALAT ================= */
   Future<void> insertAlat(Map<String, dynamic> data, {dynamic fotoFile}) async {
     try {
+      debugPrint('🔵 insertAlat dipanggil dengan data: $data');
       String? fotoUrl;
 
+      // Upload foto jika ada
       if (fotoFile != null) {
         final fileName = 'alat_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final storagePath = 'alat_images/$fileName'; // ✅ Tambahkan folder path
 
         try {
+          // ✅ Gunakan bucket 'images' bukan 'foto_alat'
           if (fotoFile is Uint8List) {
             await _client.storage
-                .from('foto_alat')
-                .uploadBinary(fileName, fotoFile);
+                .from('images')
+                .uploadBinary(storagePath, fotoFile);
           } else if (fotoFile is File) {
-            await _client.storage.from('foto_alat').upload(fileName, fotoFile);
+            await _client.storage
+                .from('images')
+                .upload(storagePath, fotoFile);
           }
 
-          fotoUrl = _client.storage.from('foto_alat').getPublicUrl(fileName);
+          fotoUrl = _client.storage.from('images').getPublicUrl(storagePath);
+          debugPrint('✅ Foto berhasil diupload: $fotoUrl');
         } catch (storageError) {
           debugPrint('❌ Storage error: $storageError');
-          // Jangan throw, lanjutkan tanpa foto
+          // Lanjutkan tanpa foto
           fotoUrl = null;
         }
       }
 
+      // ✅ Pastikan stok_tersedia diset
+      final stokTersedia = data['stok_tersedia'] ?? data['stok_total'];
+
       // Insert ke database
-      await _client.from('alat').insert({
+      final response = await _client.from('alat').insert({
         'kategori_id': data['kategori_id'],
         'nama_alat': data['nama_alat'],
         'foto_url': fotoUrl,
         'stok_total': data['stok_total'],
-        'stok_tersedia': data['stok_total'],
+        'stok_tersedia': stokTersedia, // ✅ Gunakan variable
         'kondisi': data['kondisi'] ?? 'baik',
         'is_active': data['is_active'] ?? true,
-      });
+      }).select();
 
-      debugPrint('✅ Insert alat berhasil');
+      debugPrint('✅ Insert alat berhasil: $response');
     } catch (e) {
       debugPrint('❌ Error insertAlat: $e');
       rethrow;
     }
   }
 
-  /* ================= UPDATE ================= */
-Future<void> updateKategori(String id, Map<String, dynamic> data) async {
-  debugPrint('🟡 UPDATE KATEGORI DIPANGGIL');
-  debugPrint('ID: $id');
-  debugPrint('DATA: $data');
+  /* ================= UPDATE KATEGORI ================= */
+  Future<void> updateKategori(String id, Map<String, dynamic> data) async {
+    try {
+      debugPrint('🔵 updateKategori dipanggil');
+      debugPrint('ID: $id');
+      debugPrint('DATA: $data');
 
-  final response = await _client
-      .from('kategori_alat')
-      .update({
-        'nama_kategori': data['nama_kategori'],
-        'is_active': data['is_active'],
-      })
-      .eq('id', id)
-      .select(); // 🔥 WAJIB
+      final response = await _client
+          .from('kategori_alat')
+          .update({
+            'nama_kategori': data['nama_kategori'],
+            'is_active': data['is_active'],
+          })
+          .eq('id', id)
+          .select();
 
-  debugPrint('🟢 RESPONSE UPDATE: $response');
+      debugPrint('✅ Response update kategori: $response');
 
-  // 🔥 INI KUNCI UTAMANYA
-  if (response.isEmpty) {
-    throw Exception('Update gagal: ID kategori tidak ditemukan');
+      if (response.isEmpty) {
+        throw Exception('Update gagal: ID kategori tidak ditemukan');
+      }
+
+      // Jika kategori dinonaktifkan, nonaktifkan semua alat dalam kategori
+      if (data['is_active'] == false) {
+        final alatResponse = await _client
+            .from('alat')
+            .update({'is_active': false})
+            .eq('kategori_id', id)
+            .select();
+
+        debugPrint('✅ Response update alat: $alatResponse');
+      }
+    } catch (e) {
+      debugPrint('❌ Error updateKategori: $e');
+      rethrow;
+    }
   }
 
-  // 🔥 SOFT DELETE → nonaktifkan alat
-  if (data['is_active'] == false) {
-    final alatResponse = await _client
-        .from('alat')
-        .update({'is_active': false})
-        .eq('kategori_id', id)
-        .select();
-
-    debugPrint('🟢 RESPONSE UPDATE ALAT: $alatResponse');
-  }
-}
-
-
+  /* ================= UPDATE ALAT ================= */
   Future<void> updateAlat(
     String id,
     Map<String, dynamic> data, {
     dynamic fotoFile,
   }) async {
-    final updateData = {
-      'kategori_id': data['kategori_id'],
-      'nama_alat': data['nama_alat'],
-      'stok_total': data['stok_total'],
-      'stok_tersedia': data['stok_tersedia'], // Tambahkan ini
-      'kondisi': data['kondisi'],
-      'is_active': data['is_active'],
-    };
+    try {
+      debugPrint('🔵 updateAlat dipanggil');
+      debugPrint('ID: $id');
+      debugPrint('DATA: $data');
 
-    if (fotoFile != null) {
-      final fileName = 'alat_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final updateData = {
+        'kategori_id': data['kategori_id'],
+        'nama_alat': data['nama_alat'],
+        'stok_total': data['stok_total'],
+        'stok_tersedia': data['stok_tersedia'],
+        'kondisi': data['kondisi'],
+        'is_active': data['is_active'],
+      };
 
-      if (fotoFile is Uint8List) {
-        await _client.storage
-            .from('foto_alat')
-            .uploadBinary(fileName, fotoFile);
-      } else if (fotoFile is File) {
-        await _client.storage
-            .from('foto_alat')
-            .upload(fileName, fotoFile); // Perbaiki: 'foto_alat' bukan 'alat'
+      // Upload foto baru jika ada
+      if (fotoFile != null) {
+        final fileName = 'alat_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final storagePath = 'alat_images/$fileName'; // ✅ Tambahkan folder path
+
+        try {
+          // ✅ Hapus foto lama jika ada
+          final oldData = await _client
+              .from('alat')
+              .select('foto_url')
+              .eq('id', id)
+              .single();
+
+          if (oldData['foto_url'] != null && oldData['foto_url'].isNotEmpty) {
+            await _deleteFotoFromUrl(oldData['foto_url']);
+          }
+
+          // ✅ Upload foto baru ke bucket 'images'
+          if (fotoFile is Uint8List) {
+            await _client.storage
+                .from('images')
+                .uploadBinary(storagePath, fotoFile);
+          } else if (fotoFile is File) {
+            await _client.storage
+                .from('images')
+                .upload(storagePath, fotoFile);
+          }
+
+          updateData['foto_url'] =
+              _client.storage.from('images').getPublicUrl(storagePath);
+          debugPrint('✅ Foto berhasil diupload: ${updateData['foto_url']}');
+        } catch (storageError) {
+          debugPrint('❌ Storage error: $storageError');
+        }
       }
 
-      updateData['foto_url'] = _client.storage
-          .from('foto_alat')
-          .getPublicUrl(fileName); // Perbaiki: 'foto_alat' bukan 'alat'
+      final response = await _client
+          .from('alat')
+          .update(updateData)
+          .eq('id', id)
+          .select();
+
+      debugPrint('✅ Response update alat: $response');
+
+      if (response.isEmpty) {
+        throw Exception('Update gagal: ID alat tidak ditemukan');
+      }
+    } catch (e) {
+      debugPrint('❌ Error updateAlat: $e');
+      rethrow;
     }
-
-    await _client.from('alat').update(updateData).eq('id', id);
   }
 
-  /* ================= DELETE (SOFT) ================= */
- Future<void> deleteKategori(String id) async {
-  try {
-    // Soft delete kategori
-    await _client
-        .from('kategori_alat')
-        .update({'is_active': false})
-        .eq('id', id);
+  /* ================= DELETE (SOFT) KATEGORI ================= */
+  Future<void> deleteKategori(String id) async {
+    try {
+      debugPrint('🔵 deleteKategori dipanggil untuk ID: $id');
 
-    // Soft delete semua alat dalam kategori
-    await _client
-        .from('alat')
-        .update({'is_active': false})
-        .eq('kategori_id', id);
-  } catch (e) {
-    debugPrint('❌ Error deleteKategori: $e');
-    rethrow;
+      // Soft delete kategori
+      final kategoriResponse = await _client
+          .from('kategori_alat')
+          .update({'is_active': false})
+          .eq('id', id)
+          .select();
+
+      debugPrint('✅ Response delete kategori: $kategoriResponse');
+
+      // Soft delete semua alat dalam kategori
+      final alatResponse = await _client
+          .from('alat')
+          .update({'is_active': false})
+          .eq('kategori_id', id)
+          .select();
+
+      debugPrint('✅ Response delete alat terkait: $alatResponse');
+    } catch (e) {
+      debugPrint('❌ Error deleteKategori: $e');
+      rethrow;
+    }
   }
-}
 
+  /* ================= DELETE (SOFT) ALAT ================= */
   Future<void> deleteAlat(String id) async {
-    await _client.from('alat').update({'is_active': false}).eq('id', id);
+    try {
+      debugPrint('🔵 deleteAlat dipanggil untuk ID: $id');
+
+      final response = await _client
+          .from('alat')
+          .update({'is_active': false})
+          .eq('id', id)
+          .select();
+
+      debugPrint('✅ Response delete alat: $response');
+
+      if (response.isEmpty) {
+        throw Exception('Delete gagal: ID alat tidak ditemukan');
+      }
+    } catch (e) {
+      debugPrint('❌ Error deleteAlat: $e');
+      rethrow;
+    }
   }
 
-// ================= PEMINJAMAN =================
+  /* ================= HELPER - DELETE FOTO ================= */
+  /// Helper method untuk menghapus foto dari storage berdasarkan URL
+  Future<void> _deleteFotoFromUrl(String fotoUrl) async {
+    try {
+      // Extract path dari URL
+      // Format URL: https://xxx.supabase.co/storage/v1/object/public/images/alat_images/filename.jpg
+      final uri = Uri.parse(fotoUrl);
+      final segments = uri.pathSegments;
+      
+      // Cari index 'images' dan ambil path setelahnya
+      final imagesIndex = segments.indexOf('images');
+      if (imagesIndex != -1 && imagesIndex < segments.length - 1) {
+        final path = segments.sublist(imagesIndex + 1).join('/');
+        await _client.storage.from('images').remove([path]);
+        debugPrint('✅ Foto lama berhasil dihapus: $path');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Warning delete foto: $e');
+      // Tidak throw error karena ini bukan operasi critical
+    }
+  }
+
+  // ================= PEMINJAMAN =================
 
   /// STREAM peminjaman (realtime)
   Stream<List<Map<String, dynamic>>> streamPeminjaman() {
@@ -309,20 +409,13 @@ Future<void> updateKategori(String id, Map<String, dynamic> data) async {
   }
 
   /// UPDATE peminjaman
-  Future<void> updatePeminjaman(
-      String id, Map<String, dynamic> data) async {
-    await _client
-        .from('peminjaman')
-        .update(data)
-        .eq('id', id);
+  Future<void> updatePeminjaman(String id, Map<String, dynamic> data) async {
+    await _client.from('peminjaman').update(data).eq('id', id);
   }
 
   /// DELETE peminjaman
   Future<void> deletePeminjaman(String id) async {
-    await _client
-        .from('peminjaman')
-        .delete()
-        .eq('id', id);
+    await _client.from('peminjaman').delete().eq('id', id);
   }
 
   // ================= PENGEMBALIAN =================
@@ -348,31 +441,22 @@ Future<void> updateKategori(String id, Map<String, dynamic> data) async {
   /// INSERT pengembalian
   Future<Map<String, dynamic>> insertPengembalian(
       Map<String, dynamic> data) async {
-    final res = await _client
-        .from('pengembalian')
-        .insert(data)
-        .select()
-        .single();
+    final res =
+        await _client.from('pengembalian').insert(data).select().single();
 
     return res;
   }
 
   /// UPDATE pengembalian
-  Future<void> updatePengembalian(
-      String id, Map<String, dynamic> data) async {
-    await _client
-        .from('pengembalian')
-        .update(data)
-        .eq('id', id);
+  Future<void> updatePengembalian(String id, Map<String, dynamic> data) async {
+    await _client.from('pengembalian').update(data).eq('id', id);
   }
 
   /// DELETE pengembalian
   Future<void> deletePengembalian(String id) async {
-    await _client
-        .from('pengembalian')
-        .delete()
-        .eq('id', id);
+    await _client.from('pengembalian').delete().eq('id', id);
   }
+
   // ================= DENDA =================
 
   Future<void> insertDenda(Map<String, dynamic> data) async {

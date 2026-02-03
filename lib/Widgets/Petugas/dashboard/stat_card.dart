@@ -5,6 +5,8 @@ class StatCard extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color backgroundColor;
+  final Color labelColor;
+  final Color valueColor;
 
   const StatCard({
     super.key,
@@ -12,6 +14,8 @@ class StatCard extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.backgroundColor,
+    this.labelColor = const Color(0xfffaf8f7),
+    this.valueColor = const Color(0xfffaf8f7),
   });
 
   @override
@@ -25,23 +29,21 @@ class StatCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // BAGIAN KIRI (ANGKA + TEKS)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
+                  color: valueColor,
                 ),
               ),
               const SizedBox(height: 4),
-              Text(label, style: const TextStyle(fontSize: 12)),
+              Text(label, style: TextStyle(fontSize: 12, color: labelColor)),
             ],
           ),
-
-          // IKON BULAT
           CircleAvatar(
             backgroundColor: Colors.white,
             child: Icon(icon, color: Colors.orange),

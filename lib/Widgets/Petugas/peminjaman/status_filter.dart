@@ -28,7 +28,7 @@ class _StatusFilterState extends State<StatusFilter> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selected,
-          icon: const Icon(Icons.keyboard_arrow_down),
+          icon: const Icon(Icons.arrow_drop_down),
           items: items
               .map(
                 (e) => DropdownMenuItem(

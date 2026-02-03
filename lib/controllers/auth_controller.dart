@@ -5,11 +5,11 @@ class AuthController {
   final SupabaseClient _client = Supabase.instance.client;
 
   /// LOGIN ADMIN
-  Future<void> login(String username, String password) async {
+  Future<void> login(String usernameInput, String password) async {
     final data = await _client
         .from('users')
         .select()
-        .eq('username', username)
+        .eq('username', usernameInput)
         .eq('password', password)
         .maybeSingle(); // semua role bisa login
 
@@ -24,8 +24,10 @@ class AuthController {
     // pastikan id dan role tidak null
     final userId = data['id']?.toString();
     final role = data['role']?.toString();
+    final name = data['nama_lengkap']?.toString();
+    final username = data['username']?.toString();
 
-    if (userId == null || role == null) {
+    if (userId == null || role == null || name == null || username == null) {
       throw Exception('Data user tidak lengkap di database');
     }
 
@@ -34,6 +36,8 @@ class AuthController {
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('userId', userId);
     await prefs.setString('role', role);
+    await prefs.setString('name', name);
+    await prefs.setString('username', username);
   }
 
   Future<String?> getName() async {

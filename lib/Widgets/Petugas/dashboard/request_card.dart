@@ -28,21 +28,14 @@ class RequestCard extends StatelessWidget {
           const SizedBox(height: 8),
 
           // ================= DIVIDER =================
-          const Divider(
-            height: 1,
-            thickness: 1,
-            color: Color(0xFFE5E7EB),
-          ),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
 
           const SizedBox(height: 10),
 
           // ================= TANGGAL =================
           const Text(
             '30 Jan 2026 - 01 Feb 2026',
-            style: TextStyle(
-              fontSize: 11.5,
-              color: Color(0xFF6B7280),
-            ),
+            style: TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
           ),
 
           const SizedBox(height: 4),
@@ -50,10 +43,7 @@ class RequestCard extends StatelessWidget {
           // ================= TOTAL ALAT =================
           const Text(
             'Total Alat: 2',
-            style: TextStyle(
-              fontSize: 11.5,
-              color: Color(0xFF374151),
-            ),
+            style: TextStyle(fontSize: 11.5, color: Color(0xFF374151)),
           ),
 
           const SizedBox(height: 12),
@@ -65,10 +55,7 @@ class RequestCard extends StatelessWidget {
               // STATUS (TEKS, BUKAN CHIP)
               RichText(
                 text: const TextSpan(
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: Color(0xFF374151),
-                  ),
+                  style: TextStyle(fontSize: 11.5, color: Color(0xFF374151)),
                   children: [
                     TextSpan(text: 'Status: '),
                     TextSpan(
@@ -79,28 +66,6 @@ class RequestCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ),
-
-              // BUTTON
-              SizedBox(
-                height: 30,
-                child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.visibility, size: 14),
-                  label: const Text(
-                    'Lihat Detail',
-                    style: TextStyle(fontSize: 11.5),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    elevation: 0,
-                    backgroundColor: const Color(0xFFFFB26B),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
                 ),
               ),
             ],

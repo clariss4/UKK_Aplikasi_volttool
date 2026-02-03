@@ -233,13 +233,17 @@ class _UserFormDialogState extends State<UserFormDialog> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Username tidak boleh kosong';
                     }
-                    if (value.trim().length < 4) {
-                      return 'Username minimal 4 karakter';
+                    final username = value.trim();
+
+                    // Format email sederhana
+                    final emailRegex = RegExp(
+                      r'^[a-zA-Z0-9._%+-]+@volttool\.com$',
+                    );
+
+                    if (!emailRegex.hasMatch(username)) {
+                      return 'Username harus menggunakan @volttool.com';
                     }
-                    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
-                      return 'Username hanya boleh huruf, angka, dan underscore';
-                    }
-                    
+
                     return null;
                   },
                 ),

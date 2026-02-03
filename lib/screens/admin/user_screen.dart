@@ -62,7 +62,6 @@ class _ManajemenPenggunaPageState extends State<ManajemenPenggunaPage> {
         controller: _userController, // tambahkan controller
       ),
     );
-    // Snackbar dan realtime update sudah ditangani di dalam dialog
   }
 
   /// Konfirmasi soft delete atau aktivasi user
@@ -226,11 +225,6 @@ class _ManajemenPenggunaPageState extends State<ManajemenPenggunaPage> {
               ),
             ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddUserDialog,
-        backgroundColor: const Color(0xFFFB923C),
-        child: const Icon(Icons.add),
       ),
     );
   }

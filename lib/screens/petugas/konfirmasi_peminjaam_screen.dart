@@ -3,7 +3,7 @@ import 'package:apk_peminjaman/Widgets/Petugas/peminjaman/search_bar.dart';
 import 'package:apk_peminjaman/Widgets/Petugas/peminjaman/status_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:apk_peminjaman/Widgets/main_drawer.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 
 class BorrowingPage extends StatelessWidget {
   const BorrowingPage({super.key});
@@ -15,11 +15,20 @@ class BorrowingPage extends StatelessWidget {
       drawer: AppDrawer(currentPage: 'Konfirmasi Peminjaman'),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFB923C),
+        iconTheme: IconThemeData(color: Colors.white),
         elevation: 0,
         toolbarHeight: 120,
-        title: const Text(
-          'Permintaan peminjaman',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 35, left: 4),
+
+          child: Text(
+            'Permintaan\nPeminjaman ',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
         ),
       ),
       body: Padding(

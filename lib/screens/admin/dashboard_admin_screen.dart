@@ -1,8 +1,9 @@
+import 'package:apk_peminjaman/Widgets/Admin/Dashboard/activity_list.dart';
 import 'package:apk_peminjaman/Widgets/main_drawer.dart';
-import 'package:apk_peminjaman/Widgets/peminjaman_list.dart';
+import 'package:apk_peminjaman/Widgets/Admin/Dashboard/peminjaman_list.dart';
 import 'package:apk_peminjaman/controllers/auth_controller.dart';
 import 'package:apk_peminjaman/models/data_dashboard.dart';
-import 'package:apk_peminjaman/widgets/activity_list.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 

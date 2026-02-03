@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../models/alat.dart';
-import '../../models/kategori.dart';
+import '../../../models/alat.dart';
+import '../../../models/kategori.dart';
 
 class AlatFormDialog extends StatefulWidget {
   final Alat? alat;
@@ -162,7 +162,7 @@ class _AlatFormDialogState extends State<AlatFormDialog> {
                       width: 96,
                       height: 96,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: Colors.grey.shade500,
                         borderRadius: BorderRadius.circular(8),
                         image: _getImageDecoration(),
                       ),

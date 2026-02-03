@@ -1,8 +1,8 @@
 import 'package:apk_peminjaman/Widgets/Petugas/pengembalian/filter_request.dart';
 import 'package:apk_peminjaman/Widgets/Petugas/pengembalian/return_card.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/main_drawer.dart';
-
 
 class ReturnRequestPage extends StatefulWidget {
   const ReturnRequestPage({super.key});
@@ -21,7 +21,21 @@ class _ReturnRequestPageState extends State<ReturnRequestPage> {
       backgroundColor: const Color(0xFFF7F2EC),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFB923C),
-        title: const Text('Permintaan Pengembalian'),
+        iconTheme: IconThemeData(color: Colors.white),
+        elevation: 0,
+        toolbarHeight: 120,
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 35, left: 4),
+
+          child: Text(
+            'Permintaan\nPengembalian ',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -67,12 +81,7 @@ class _ReturnRequestPageState extends State<ReturnRequestPage> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: ListView(
-                children: const [
-                  ReturnCard(),
-                  ReturnCard(),
-                ],
-              ),
+              child: ListView(children: const [ReturnCard(), ReturnCard()]),
             ),
           ],
         ),
