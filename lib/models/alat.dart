@@ -38,6 +38,8 @@ class Alat {
     );
   }
 
+  get namaKategori => null;
+
   /* ================= MAP UNTUK INSERT / UPDATE ================= */
   Map<String, dynamic> toInsertMap() {
     return {

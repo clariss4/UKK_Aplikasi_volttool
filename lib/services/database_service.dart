@@ -1,4 +1,5 @@
 import 'dart:io' show File;
+import 'package:apk_peminjaman/models/log_aktivitas.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -146,53 +147,47 @@ class DatabaseService {
       debugPrint('🔵 insertAlat dipanggil dengan data: $data');
       String? fotoUrl;
 
-      // Upload foto jika ada
       if (fotoFile != null) {
         final fileName = 'alat_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final storagePath = 'alat_images/$fileName'; // ✅ Tambahkan folder path
+        final storagePath = 'alat_images/$fileName';
 
         try {
-          // ✅ Gunakan bucket 'images' bukan 'foto_alat'
           if (fotoFile is Uint8List) {
             await _client.storage
-                .from('images')
+                .from('foto_alat')
                 .uploadBinary(storagePath, fotoFile);
           } else if (fotoFile is File) {
             await _client.storage
-                .from('images')
+                .from('foto_alat')
                 .upload(storagePath, fotoFile);
           }
 
-          fotoUrl = _client.storage.from('images').getPublicUrl(storagePath);
+          fotoUrl =
+              _client.storage.from('foto_alat').getPublicUrl(storagePath);
+
           debugPrint('✅ Foto berhasil diupload: $fotoUrl');
         } catch (storageError) {
           debugPrint('❌ Storage error: $storageError');
-          // Lanjutkan tanpa foto
           fotoUrl = null;
         }
       }
 
-      // ✅ Pastikan stok_tersedia diset
       final stokTersedia = data['stok_tersedia'] ?? data['stok_total'];
 
-      // Insert ke database
-      final response = await _client.from('alat').insert({
+      await _client.from('alat').insert({
         'kategori_id': data['kategori_id'],
         'nama_alat': data['nama_alat'],
         'foto_url': fotoUrl,
         'stok_total': data['stok_total'],
-        'stok_tersedia': stokTersedia, // ✅ Gunakan variable
+        'stok_tersedia': stokTersedia,
         'kondisi': data['kondisi'] ?? 'baik',
         'is_active': data['is_active'] ?? true,
-      }).select();
-
-      debugPrint('✅ Insert alat berhasil: $response');
+      });
     } catch (e) {
       debugPrint('❌ Error insertAlat: $e');
       rethrow;
     }
   }
-
   /* ================= UPDATE KATEGORI ================= */
   Future<void> updateKategori(String id, Map<String, dynamic> data) async {
     try {
@@ -251,53 +246,40 @@ class DatabaseService {
         'is_active': data['is_active'],
       };
 
-      // Upload foto baru jika ada
-      if (fotoFile != null) {
+       if (fotoFile != null) {
         final fileName = 'alat_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final storagePath = 'alat_images/$fileName'; // ✅ Tambahkan folder path
+        final storagePath = 'alat_images/$fileName';
 
         try {
-          // ✅ Hapus foto lama jika ada
           final oldData = await _client
               .from('alat')
               .select('foto_url')
               .eq('id', id)
               .single();
 
-          if (oldData['foto_url'] != null && oldData['foto_url'].isNotEmpty) {
+          if (oldData['foto_url'] != null &&
+              oldData['foto_url'].toString().isNotEmpty) {
             await _deleteFotoFromUrl(oldData['foto_url']);
           }
 
-          // ✅ Upload foto baru ke bucket 'images'
           if (fotoFile is Uint8List) {
             await _client.storage
-                .from('images')
+                .from('foto_alat')
                 .uploadBinary(storagePath, fotoFile);
           } else if (fotoFile is File) {
             await _client.storage
-                .from('images')
+                .from('foto_alat')
                 .upload(storagePath, fotoFile);
           }
 
           updateData['foto_url'] =
-              _client.storage.from('images').getPublicUrl(storagePath);
-          debugPrint('✅ Foto berhasil diupload: ${updateData['foto_url']}');
-        } catch (storageError) {
-          debugPrint('❌ Storage error: $storageError');
+              _client.storage.from('foto_alat').getPublicUrl(storagePath);
+        } catch (e) {
+          debugPrint('❌ Storage error: $e');
         }
       }
 
-      final response = await _client
-          .from('alat')
-          .update(updateData)
-          .eq('id', id)
-          .select();
-
-      debugPrint('✅ Response update alat: $response');
-
-      if (response.isEmpty) {
-        throw Exception('Update gagal: ID alat tidak ditemukan');
-      }
+      await _client.from('alat').update(updateData).eq('id', id);
     } catch (e) {
       debugPrint('❌ Error updateAlat: $e');
       rethrow;
@@ -355,25 +337,82 @@ class DatabaseService {
   }
 
   /* ================= HELPER - DELETE FOTO ================= */
-  /// Helper method untuk menghapus foto dari storage berdasarkan URL
+ /* ================= HELPER DELETE FOTO ================= */
   Future<void> _deleteFotoFromUrl(String fotoUrl) async {
     try {
-      // Extract path dari URL
-      // Format URL: https://xxx.supabase.co/storage/v1/object/public/images/alat_images/filename.jpg
       final uri = Uri.parse(fotoUrl);
       final segments = uri.pathSegments;
-      
-      // Cari index 'images' dan ambil path setelahnya
-      final imagesIndex = segments.indexOf('images');
-      if (imagesIndex != -1 && imagesIndex < segments.length - 1) {
-        final path = segments.sublist(imagesIndex + 1).join('/');
-        await _client.storage.from('images').remove([path]);
-        debugPrint('✅ Foto lama berhasil dihapus: $path');
+
+      final bucketIndex = segments.indexOf('foto_alat');
+      if (bucketIndex != -1 && bucketIndex < segments.length - 1) {
+        final path = segments.sublist(bucketIndex + 1).join('/');
+        await _client.storage.from('foto_alat').remove([path]);
+        debugPrint('✅ Foto lama dihapus: $path');
       }
     } catch (e) {
       debugPrint('⚠️ Warning delete foto: $e');
-      // Tidak throw error karena ini bukan operasi critical
     }
+  }
+
+  //stream alat untuk peminjam
+ Stream<List<Alat>> streamAlatUntukPeminjam() {
+  return _client
+      .from('alat')
+      .stream(primaryKey: ['id'])
+      .eq('is_active', true)
+      .order('nama_alat')
+      .map((rows) {
+        return rows
+            .map((e) => Alat.fromJson(e))
+            .where((alat) => alat.stokTersedia > 0) // 🔥 FILTER DI CLIENT
+            .toList();
+      });
+}
+
+  //get alat dan kategori untuk role peminjam
+
+  Future<List<Alat>> getAlatUntukPeminjam() async {
+  final res = await _client
+      .from('alat')
+      .select()
+      .eq('is_active', true)
+      .gt('stok_tersedia', 0)
+      .order('nama_alat');
+
+  return (res as List).map((e) => Alat.fromJson(e)).toList();
+}
+Future<List<Kategori>> getKategoriUntukPeminjam() async {
+  final res = await _client
+      .from('kategori_alat')
+      .select()
+      .eq('is_active', true)
+      .order('nama_kategori');
+
+  return (res as List)
+      .map((e) => Kategori.fromJson(e))
+      .toList();
+}
+
+//================= ALAT AKTIF UNTUK PEMINJAM ================= */
+  Future<List<Alat>> getAlatAktif() async {
+    final res = await _client
+        .from('alat')
+        .select()
+        .eq('is_active', true)
+        .gt('stok_tersedia', 0)
+        .order('nama_alat');
+
+    return (res as List).map((e) => Alat.fromJson(e)).toList();
+  }
+
+  /* ================= KATEGORI AKTIF YANG PUNYA ALAT ================= */
+  Future<List<Map<String, dynamic>>> getKategoriDenganAlatAktif() async {
+    final res = await _client
+        .from('kategori')
+        .select('id, nama_kategori, alat!inner(id)')
+        .eq('is_active', true);
+
+    return List<Map<String, dynamic>>.from(res);
   }
 
   // ================= PEMINJAMAN =================
@@ -417,6 +456,54 @@ class DatabaseService {
   Future<void> deletePeminjaman(String id) async {
     await _client.from('peminjaman').delete().eq('id', id);
   }
+
+
+// ================= DETAIL PEMINJAMAN =================
+Future<void> insertPeminjamanDetail(Map<String, dynamic> data) async {
+  await _client.from('peminjaman_detail').insert(data);
+}
+
+// ================= UPDATE STOK =================
+Future<void> kurangiStokAlat({
+  required String alatId,
+  required int jumlah,
+}) async {
+  final alat = await _client
+      .from('alat')
+      .select('stok_tersedia')
+      .eq('id', alatId)
+      .single();
+
+  final stok = alat['stok_tersedia'] as int;
+
+  if (stok < jumlah) {
+    throw Exception('Stok alat tidak mencukupi');
+  }
+
+  await _client.from('alat').update({
+    'stok_tersedia': stok - jumlah,
+  }).eq('id', alatId);
+}
+
+// ================= TAMBAH STOK =================
+Future<void> tambahStokAlat({
+  required String alatId,
+  required int jumlah,
+}) async {
+  final alat = await _client
+      .from('alat')
+      .select('stok_tersedia')
+      .eq('id', alatId)
+      .single();
+
+  final stok = alat['stok_tersedia'] as int;
+
+  await _client.from('alat').update({
+    'stok_tersedia': stok + jumlah,
+  }).eq('id', alatId);
+}
+
+
 
   // ================= PENGEMBALIAN =================
 
@@ -470,4 +557,55 @@ class DatabaseService {
   Future<void> deleteDenda(String id) async {
     await _client.from('denda').delete().eq('id', id);
   }
+
+  // ================= LOG AKTIVITAS =================
+
+// STREAM realtime log aktivitas
+Stream<List<LogAktivitas>> streamLogAktivitas() {
+  return _client
+      .from('log_aktivitas')
+      .stream(primaryKey: ['id'])
+      .order('waktu', ascending: false)
+      .map((rows) {
+        return rows.map((e) => LogAktivitas.fromJson(e)).toList();
+      });
+}
+
+/// STREAM realtime (pakai VIEW)
+Stream<List<LogAktivitas>> streamLogAktivitasView() {
+  return _client
+      .from('v_log_aktivitas')
+      .stream(primaryKey: ['id'])
+      .order('waktu', ascending: false)
+      .map((rows) {
+        return rows.map((e) {
+          return LogAktivitas(
+            id: e['id'].toString(),
+            userId: e['user_id'].toString(),
+            namaUser: e['nama_lengkap'] ?? '-',
+            aktivitas: e['aktivitas'] ?? '',
+            waktu: DateTime.parse(e['waktu']),
+          );
+        }).toList();
+      });
+}
+
+// GET sekali (pakai VIEW)
+Future<List<LogAktivitas>> getLogAktivitasView() async {
+  final res = await _client
+      .from('v_log_aktivitas')
+      .select()
+      .order('waktu', ascending: false);
+
+  return (res as List).map((e) {
+    return LogAktivitas(
+      id: e['id'].toString(),
+      userId: e['user_id'].toString(),
+      namaUser: e['nama_lengkap'] ?? '-',
+      aktivitas: e['aktivitas'] ?? '',
+      waktu: DateTime.parse(e['waktu']),
+    );
+  }).toList();
+}
+
 }

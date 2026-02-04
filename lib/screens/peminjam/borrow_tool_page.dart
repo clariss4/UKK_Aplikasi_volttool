@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'package:apk_peminjaman/Widgets/main_drawer.dart';
+import 'package:apk_peminjaman/controllers/borrow_cart_controller.dart';
+import 'package:apk_peminjaman/models/alat.dart';
+import 'package:apk_peminjaman/models/kategori.dart';
+import 'package:apk_peminjaman/screens/peminjam/borrow_cart_page.dart';
+import 'package:apk_peminjaman/services/database_service.dart';
 
 class BorrowToolsPage extends StatefulWidget {
   const BorrowToolsPage({super.key});
@@ -9,28 +16,52 @@ class BorrowToolsPage extends StatefulWidget {
 }
 
 class _BorrowToolsPageState extends State<BorrowToolsPage> {
-  String selectedCategory = 'Alat Ukur';
+  final DatabaseService _db = DatabaseService();
 
-  final List<Map<String, dynamic>> tools = List.generate(4, (_) {
-    return {
-      'name': 'Tang tangan',
-      'total': 34,
-      'available': 24,
-      'condition': 'Baik',
-      'qty': 0,
-    };
-  });
+  List<Alat> tools = [];
+  List<Kategori> categories = [];
 
-  int get totalInBag =>
-      tools.fold(0, (sum, item) => sum + (item['qty'] as int));
+  String? selectedKategoriId;
+  String searchKeyword = '';
+  bool isLoading = true;
+
+  bool get isSearching => searchKeyword.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final alatList = await _db.getAlatUntukPeminjam();
+    final kategoriList = await _db.getKategoriUntukPeminjam();
+
+    /// ✅ hanya kategori yang punya alat aktif & stok > 0
+    final filteredKategori = kategoriList.where((k) {
+      return alatList.any(
+        (a) => a.kategoriId == k.id && a.stokTersedia > 0,
+      );
+    }).toList();
+
+    setState(() {
+      tools = alatList;
+      categories = filteredKategori;
+      selectedKategoriId =
+          filteredKategori.isNotEmpty ? filteredKategori.first.id : null;
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final cart = context.watch<BorrowCartController>();
+    final totalInBag = cart.totalQty;
+
     return Scaffold(
       drawer: AppDrawer(currentPage: 'Peminjaman Alat'),
       backgroundColor: const Color(0xFFF7F2EC),
 
-      // ================= HEADER =================
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(88),
         child: AppBar(
@@ -46,7 +77,6 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
         ),
       ),
 
-      // ================= BODY =================
       body: Stack(
         children: [
           Padding(
@@ -54,42 +84,51 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // SEARCH
                 _searchBar(),
                 const SizedBox(height: 12),
 
-                // CATEGORY
                 _categorySelector(),
                 const SizedBox(height: 20),
 
-                const Text(
-                  'Alat Ukur',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
+                if (!isSearching && selectedKategoriId != null)
+                  Text(
+                    categories
+                        .firstWhere((k) => k.id == selectedKategoriId)
+                        .namaKategori,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+
                 const SizedBox(height: 12),
 
-                // LIST
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: tools.length,
-                    itemBuilder: (context, index) {
-                      return _toolCard(index);
-                    },
-                  ),
+                  child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView(
+                          children: tools.where((t) {
+                            final matchSearch = t.namaAlat
+                                .toLowerCase()
+                                .contains(searchKeyword);
+
+                            if (isSearching) {
+                              return matchSearch;
+                            }
+
+                            return t.kategoriId == selectedKategoriId &&
+                                matchSearch;
+                          }).map((t) => _toolCard(t, cart)).toList(),
+                        ),
                 ),
               ],
             ),
           ),
 
-          // ================= FLOATING BAG =================
           if (totalInBag > 0)
             Positioned(
               bottom: 24,
               right: 16,
               child: GestureDetector(
-                onTap: () {
-                  _showBag(context);
-                },
+                onTap: () => _showBag(context),
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -122,8 +161,7 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
     );
   }
 
-  // ================= COMPONENTS =================
-
+  /// ================= SEARCH BAR =================
   Widget _searchBar() {
     return Container(
       height: 48,
@@ -133,57 +171,68 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
-        children: const [
+        children: [
           Expanded(
             child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Cari alat atau kategori...',
+              onChanged: (value) {
+                setState(() => searchKeyword = value.toLowerCase());
+              },
+              decoration: const InputDecoration(
+                hintText: 'Cari alat...',
                 border: InputBorder.none,
               ),
             ),
           ),
-          Icon(Icons.search, color: Colors.grey),
+          const Icon(Icons.search, color: Colors.grey),
         ],
       ),
     );
   }
 
+  /// ================= KATEGORI =================
   Widget _categorySelector() {
-    return Row(
-      children: [
-        _categoryChip('Alat Ukur'),
-        const SizedBox(width: 8),
-        _categoryChip('Alat Solder'),
-        const SizedBox(width: 8),
-        _categoryChip('Alat Kerja listrik'),
-      ],
-    );
-  }
+    final visibleCategories = isSearching
+        ? categories.where((k) {
+            return tools.any((a) =>
+                a.kategoriId == k.id &&
+                a.namaAlat.toLowerCase().contains(searchKeyword));
+          }).toList()
+        : categories;
 
-  Widget _categoryChip(String title) {
-    final bool active = selectedCategory == title;
-    return GestureDetector(
-      onTap: () => setState(() => selectedCategory = title),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFFFDBA74) : Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFFDBA74)),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: active ? Colors.white : const Color(0xFFFB923C),
-          ),
-        ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: visibleCategories.map((c) {
+          final active = selectedKategoriId == c.id;
+          return GestureDetector(
+            onTap: () => setState(() => selectedKategoriId = c.id),
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: active ? const Color(0xFFFDBA74) : Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFDBA74)),
+              ),
+              child: Text(
+                c.namaKategori,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color:
+                      active ? Colors.white : const Color(0xFFFB923C),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _toolCard(int index) {
-    final tool = tools[index];
+  /// ================= TOOL CARD =================
+  Widget _toolCard(Alat t, BorrowCartController cart) {
+    final qty = cart.getQty(t.id);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -194,69 +243,71 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
       ),
       child: Row(
         children: [
-          // IMAGE
           Container(
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
               borderRadius: BorderRadius.circular(8),
+              color: Colors.grey.shade200,
             ),
-            child: const Icon(Icons.build, size: 36),
+            child: t.fotoUrl == null
+                ? const Icon(Icons.build, size: 36)
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      t.fotoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.image_not_supported),
+                    ),
+                  ),
           ),
           const SizedBox(width: 12),
 
-          // INFO
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  tool['name'],
+                  t.namaAlat,
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 4),
-                Text('Stok total: ${tool['total']}'),
-                Text('Stok Tersedia: ${tool['available']}'),
-                Text('Kondisi: ${tool['condition']}'),
+                Text('Stok tersedia: ${t.stokTersedia}'),
                 const SizedBox(height: 8),
-
-                // QTY
                 Row(
                   children: [
                     const Text('Jumlah:'),
                     const SizedBox(width: 8),
-                    _qtyButton(Icons.remove, () {
-                      if (tool['qty'] > 0) {
-                        setState(() => tool['qty']--);
-                      }
-                    }),
+                    _qtyButton(Icons.remove,
+                        () => cart.decrease(t.id)),
                     Container(
                       width: 32,
                       alignment: Alignment.center,
-                      child: Text('${tool['qty']}'),
+                      child: Text('$qty'),
                     ),
-                    _qtyButton(Icons.add, () {
-                      if (tool['qty'] < tool['available']) {
-                        setState(() => tool['qty']++);
-                      }
-                    }),
+                    _qtyButton(
+                      Icons.add,
+                      () => cart.addManual(
+                        id: t.id,
+                        nama: t.namaAlat,
+                        stok: t.stokTersedia,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
 
-          // PINJAM
           ElevatedButton(
-            onPressed: tool['qty'] > 0 ? () {} : null,
+            onPressed: () => cart.addManual(
+              id: t.id,
+              nama: t.namaAlat,
+              stok: t.stokTersedia,
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFB7C12),
-              disabledBackgroundColor: Colors.grey.shade300,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
             ),
             child: const Text('Pinjam'),
           ),
@@ -280,55 +331,13 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
     );
   }
 
-  // ================= BAG POPUP =================
-
+  /// ================= BAG =================
   void _showBag(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const BorrowCartPage(),
       ),
-      builder: (_) {
-        final bagItems =
-            tools.where((item) => item['qty'] > 0).toList();
-
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Bag Peminjaman',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 12),
-
-              ...bagItems.map((item) {
-                return ListTile(
-                  title: Text(item['name']),
-                  trailing: Text('${item['qty']}x'),
-                );
-              }),
-
-              const SizedBox(height: 16),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // NEXT: kirim ke backend
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFB7C12),
-                  ),
-                  child: const Text('Ajukan Peminjaman'),
-                ),
-              )
-            ],
-          ),
-        );
-      },
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:apk_peminjaman/controllers/alat_controller.dart';
+import 'package:apk_peminjaman/controllers/borrow_cart_controller.dart';
 import 'package:apk_peminjaman/controllers/kategori_controller.dart';
 import 'package:apk_peminjaman/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => KategoriController()),
         ChangeNotifierProvider(create: (_) => AlatController()),
+        ChangeNotifierProvider(create: (_) => BorrowCartController()),
       ],
       child: const MyApp(),
     ),

@@ -38,7 +38,10 @@ class AuthController {
     await prefs.setString('role', role);
     await prefs.setString('name', name);
     await prefs.setString('username', username);
+    
   }
+
+  
 
   Future<String?> getName() async {
     final prefs = await SharedPreferences.getInstance();

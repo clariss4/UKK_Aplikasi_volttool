@@ -1,8 +1,8 @@
-import 'package:apk_peminjaman/Widgets/main_drawer.dart';
 import 'package:flutter/material.dart';
 import '../../models/log_aktivitas.dart';
+import '../../services/database_service.dart';
 import '../../widgets/log_card.dart';
-import '../../data_dummy.dart'; // pastikan ini impor data dummy
+import 'package:apk_peminjaman/Widgets/main_drawer.dart';
 
 class LogAktivitasPage extends StatefulWidget {
   const LogAktivitasPage({Key? key}) : super(key: key);
@@ -12,41 +12,31 @@ class LogAktivitasPage extends StatefulWidget {
 }
 
 class _LogAktivitasPageState extends State<LogAktivitasPage> {
+  final DatabaseService _db = DatabaseService();
+
   final searchController = TextEditingController();
   DateTime? selectedDate;
 
-  // Gunakan data dummy
-  final List<LogAktivitas> logList = DummyData.logList;
+  // filter logs berdasarkan search + tanggal
+  List<LogAktivitas> filterLogs(List<LogAktivitas> logs) {
+    var filtered = logs;
 
-  // Filter logs berdasarkan pencarian dan tanggal
-  List<LogAktivitas> get filteredLogs {
-    var filtered = logList;
-
-    // ===================== FILTER PENCARIAN =====================
-    if (searchController.text.isNotEmpty) {
-      filtered = filtered
-          .where(
-            (log) =>
-                log.namaUser.toLowerCase().contains(
-                  searchController.text.toLowerCase(),
-                ) ||
-                log.aktivitas.toLowerCase().contains(
-                  searchController.text.toLowerCase(),
-                ),
-          )
-          .toList();
+    // SEARCH
+    final q = searchController.text.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      filtered = filtered.where((log) {
+        return log.namaUser.toLowerCase().contains(q) ||
+            log.aktivitas.toLowerCase().contains(q);
+      }).toList();
     }
 
-    // ===================== FILTER TANGGAL =====================
+    // FILTER TANGGAL
     if (selectedDate != null) {
-      filtered = filtered
-          .where(
-            (log) =>
-                log.waktu.year == selectedDate!.year &&
-                log.waktu.month == selectedDate!.month &&
-                log.waktu.day == selectedDate!.day,
-          )
-          .toList();
+      filtered = filtered.where((log) {
+        final w = log.waktu;
+        final d = selectedDate!;
+        return w.year == d.year && w.month == d.month && w.day == d.day;
+      }).toList();
     }
 
     return filtered;
@@ -58,7 +48,48 @@ class _LogAktivitasPageState extends State<LogAktivitasPage> {
       backgroundColor: const Color(0xFFF5F5F5),
       drawer: AppDrawer(currentPage: 'Log Aktivitas'),
       appBar: _buildAppBar(),
-      body: Column(children: [_buildSearchBar(), _buildLogList()]),
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          Expanded(
+            child: StreamBuilder<List<LogAktivitas>>(
+              // pakai view agar nama user selalu ada realtime
+              stream: _db.streamLogAktivitasView(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                  );
+                }
+
+                final logs = filterLogs(snapshot.data ?? []);
+
+                if (logs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'Tidak ada log aktivitas',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: logs.length,
+                  itemBuilder: (context, index) => LogCard(log: logs[index]),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -113,7 +144,7 @@ class _LogAktivitasPageState extends State<LogAktivitasPage> {
                     horizontal: 16,
                     vertical: 12,
                   ),
-                  suffixIcon: Icon(Icons.search, color: Colors.grey[400]),
+                  suffixIcon: Icon(Icons.search, color: Colors.grey),
                 ),
               ),
             ),
@@ -134,27 +165,22 @@ class _LogAktivitasPageState extends State<LogAktivitasPage> {
               onPressed: () => _selectDate(context),
             ),
           ),
+          if (selectedDate != null) ...[
+            const SizedBox(width: 6),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: IconButton(
+                tooltip: 'Reset tanggal',
+                icon: const Icon(Icons.close, color: Colors.red),
+                onPressed: () => setState(() => selectedDate = null),
+              ),
+            ),
+          ],
         ],
       ),
-    );
-  }
-
-  // ===================== LOG LIST =====================
-  Widget _buildLogList() {
-    final logs = filteredLogs;
-    return Expanded(
-      child: logs.isEmpty
-          ? Center(
-              child: Text(
-                'Tidak ada log aktivitas',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: logs.length,
-              itemBuilder: (context, index) => LogCard(log: logs[index]),
-            ),
     );
   }
 
@@ -176,7 +202,10 @@ class _LogAktivitasPageState extends State<LogAktivitasPage> {
         child: child!,
       ),
     );
-    if (picked != null) setState(() => selectedDate = picked);
+
+    if (picked != null) {
+      setState(() => selectedDate = picked);
+    }
   }
 
   @override
