@@ -7,7 +7,6 @@ import 'package:apk_peminjaman/models/data_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -24,7 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFf5efeb),
       appBar: _buildAppBar(),
-      drawer: AppDrawer(currentPage: 'Dashboard'),
+      drawer: AppDrawer(currentPage: 'Dashboard Admin'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

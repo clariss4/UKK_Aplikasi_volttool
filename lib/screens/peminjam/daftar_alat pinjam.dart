@@ -20,32 +20,12 @@ class DaftarAlatPage extends StatelessWidget {
           child: Text(
             'Daftar Alat\nPinjam',
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.person, color: Color(0xFFFB923C)),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Peminjam',
-                  style: TextStyle(fontSize: 11, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),

@@ -1,7 +1,8 @@
 import 'package:apk_peminjaman/Widgets/colored_text_field.dart';
 import 'package:apk_peminjaman/controllers/auth_controller.dart';
 import 'package:apk_peminjaman/screens/admin/dashboard_admin_screen.dart';
-// import 'package:apk_peminjaman/screens/admin/registrer_admin_screen.dart';
+import 'package:apk_peminjaman/screens/petugas/dashboard_petugas_screen.dart';
+import 'package:apk_peminjaman/screens/peminjam/dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -36,10 +37,34 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text.trim(),
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
-      );
+      // =======================
+      // FIX: NAVIGASI SESUAI ROLE
+      // =======================
+      final role = await _auth.getRole();
+
+      if (!mounted) return;
+
+      if (role == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        );
+      } else if (role == 'petugas') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardPetugasScreen()),
+        );
+      } else if (role == 'peminjam') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardPage()),
+        );
+      } else {
+        // kalau role tidak dikenali (data salah di DB)
+        setState(() {
+          _loginError = 'Role tidak valid: $role';
+        });
+      }
     } catch (e) {
       setState(() {
         _loginError = e.toString().replaceFirst('Exception: ', '');
@@ -115,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ColoredTextField(
                         controller: _passwordController,
                         hint: 'Password',
-                        isPassword: true, // sembunyikan password
+                        isPassword: true,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Password wajib diisi';
@@ -164,28 +189,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(color: Colors.red),
                         ),
                       ],
-
-                      const SizedBox(height: 16),
-
-                      // // ===== REGISTER LINK =====
-                      // GestureDetector(
-                      //   onTap: () {
-                      //     Navigator.push(
-                      //       context,
-                      //       MaterialPageRoute(
-                      //         builder: (_) => const RegisterAdminScreen(),
-                      //       ),
-                      //     );
-                      //   },
-                      //   child: const Text(
-                      //     'Registrasi Admin',
-                      //     style: TextStyle(
-                      //       fontFamily: 'Inter',
-                      //       fontSize: 13,
-                      //       color: Colors.blue,
-                      //     ),
-                      //   ),
-                      // ),
                     ],
                   ),
                 ),

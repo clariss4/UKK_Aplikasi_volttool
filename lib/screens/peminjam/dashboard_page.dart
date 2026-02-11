@@ -1,4 +1,3 @@
-
 import 'package:apk_peminjaman/models/dashboard_peminjam.dart';
 import 'package:apk_peminjaman/widgets/main_drawer.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +41,7 @@ class DashboardPage extends StatelessWidget {
       backgroundColor: backgroundColor,
       body: Column(
         children: [
-          _buildAppBar(),
+          _buildAppBar(context), // FIX: kasih context
           _buildSearchBar(),
           Expanded(
             child: ListView.builder(
@@ -58,16 +57,28 @@ class DashboardPage extends StatelessWidget {
   }
 
   // ================== APP BAR ==================
-  Widget _buildAppBar() {
+  Widget _buildAppBar(BuildContext context) {
     return Container(
       height: 120,
       padding: const EdgeInsets.fromLTRB(16, 40, 16, 20),
       color: primaryColor,
       child: Row(
-        children: const [
-          Icon(Icons.menu, color: Colors.white),
-          SizedBox(width: 16),
-          Text(
+        children: [
+          // FIX: icon menu jadi tombol yang bisa membuka drawer
+          Builder(
+            builder: (ctx) {
+              return IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () {
+                  Scaffold.of(ctx).openDrawer();
+                },
+              );
+            },
+          ),
+
+          const SizedBox(width: 8),
+
+          const Text(
             'Dashboard',
             style: TextStyle(
               color: Colors.white,

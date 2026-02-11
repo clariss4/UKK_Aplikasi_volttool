@@ -39,16 +39,15 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
 
     /// ✅ hanya kategori yang punya alat aktif & stok > 0
     final filteredKategori = kategoriList.where((k) {
-      return alatList.any(
-        (a) => a.kategoriId == k.id && a.stokTersedia > 0,
-      );
+      return alatList.any((a) => a.kategoriId == k.id && a.stokTersedia > 0);
     }).toList();
 
     setState(() {
       tools = alatList;
       categories = filteredKategori;
-      selectedKategoriId =
-          filteredKategori.isNotEmpty ? filteredKategori.first.id : null;
+      selectedKategoriId = filteredKategori.isNotEmpty
+          ? filteredKategori.first.id
+          : null;
       isLoading = false;
     });
   }
@@ -67,11 +66,16 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
         child: AppBar(
           elevation: 0,
           backgroundColor: const Color(0xFFFB923C),
+          iconTheme: IconThemeData(color: Colors.white),
           title: const Padding(
             padding: EdgeInsets.only(top: 16),
             child: Text(
               'Peminjaman Alat',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
@@ -96,7 +100,9 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
                         .firstWhere((k) => k.id == selectedKategoriId)
                         .namaKategori,
                     style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w700),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
 
                 const SizedBox(height: 12),
@@ -105,18 +111,21 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
                   child: isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : ListView(
-                          children: tools.where((t) {
-                            final matchSearch = t.namaAlat
-                                .toLowerCase()
-                                .contains(searchKeyword);
+                          children: tools
+                              .where((t) {
+                                final matchSearch = t.namaAlat
+                                    .toLowerCase()
+                                    .contains(searchKeyword);
 
-                            if (isSearching) {
-                              return matchSearch;
-                            }
+                                if (isSearching) {
+                                  return matchSearch;
+                                }
 
-                            return t.kategoriId == selectedKategoriId &&
-                                matchSearch;
-                          }).map((t) => _toolCard(t, cart)).toList(),
+                                return t.kategoriId == selectedKategoriId &&
+                                    matchSearch;
+                              })
+                              .map((t) => _toolCard(t, cart))
+                              .toList(),
                         ),
                 ),
               ],
@@ -130,8 +139,10 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
               child: GestureDetector(
                 onTap: () => _showBag(context),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
@@ -139,13 +150,12 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
                       BoxShadow(
                         blurRadius: 10,
                         color: Colors.black.withOpacity(0.1),
-                      )
+                      ),
                     ],
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.shopping_bag,
-                          color: Color(0xFFFB923C)),
+                      const Icon(Icons.shopping_bag, color: Color(0xFFFB923C)),
                       const SizedBox(width: 8),
                       Text(
                         'Bag ($totalInBag)',
@@ -193,9 +203,11 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
   Widget _categorySelector() {
     final visibleCategories = isSearching
         ? categories.where((k) {
-            return tools.any((a) =>
-                a.kategoriId == k.id &&
-                a.namaAlat.toLowerCase().contains(searchKeyword));
+            return tools.any(
+              (a) =>
+                  a.kategoriId == k.id &&
+                  a.namaAlat.toLowerCase().contains(searchKeyword),
+            );
           }).toList()
         : categories;
 
@@ -208,8 +220,7 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
             onTap: () => setState(() => selectedKategoriId = c.id),
             child: Container(
               margin: const EdgeInsets.only(right: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: active ? const Color(0xFFFDBA74) : Colors.white,
                 borderRadius: BorderRadius.circular(8),
@@ -219,8 +230,7 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
                 c.namaKategori,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color:
-                      active ? Colors.white : const Color(0xFFFB923C),
+                  color: active ? Colors.white : const Color(0xFFFB923C),
                 ),
               ),
             ),
@@ -271,7 +281,9 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
                 Text(
                   t.namaAlat,
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w700),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 Text('Stok tersedia: ${t.stokTersedia}'),
                 const SizedBox(height: 8),
@@ -279,8 +291,7 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
                   children: [
                     const Text('Jumlah:'),
                     const SizedBox(width: 8),
-                    _qtyButton(Icons.remove,
-                        () => cart.decrease(t.id)),
+                    _qtyButton(Icons.remove, () => cart.decrease(t.id)),
                     Container(
                       width: 32,
                       alignment: Alignment.center,
@@ -335,9 +346,7 @@ class _BorrowToolsPageState extends State<BorrowToolsPage> {
   void _showBag(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const BorrowCartPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const BorrowCartPage()),
     );
   }
 }
